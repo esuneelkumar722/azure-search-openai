@@ -1,0 +1,10 @@
+variable "name" { type = string }
+variable "resource_group_name" { type = string }
+variable "location" { type = string }
+variable "tags" { type = map(string) }
+variable "sku_name" { type = string }
+variable "throughput" { type = number }
+variable "public_network_access" { type = string }
+variable "bypass" { type = string }
+variable "chat_history_database_name" { type = string }
+variable "chat_history_container_name" { type = string }

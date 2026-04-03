@@ -1,0 +1,274 @@
+# =============================================================================
+# Azure DevOps CI/CD Pipeline for Terraform + Container Apps Deployment
+# Uses Workload Identity Federation (WIF) — no secrets stored in pipeline
+# =============================================================================
+
+trigger:
+  branches:
+    include:
+      - main
+  paths:
+    include:
+      - infra/terraform/**
+      - app/**
+
+parameters:
+  - name: environment
+    displayName: "Target Environment"
+    type: string
+    default: dev
+    values:
+      - dev
+      - staging
+      - prod
+
+  - name: action
+    displayName: "Terraform Action"
+    type: string
+    default: plan
+    values:
+      - plan
+      - apply
+      - destroy
+
+variables:
+  - group: "terraform-${{ parameters.environment }}"
+  - name: tfWorkingDir
+    value: "$(System.DefaultWorkingDirectory)/infra/terraform"
+  - name: tfStateKey
+    value: "azure-search-openai-${{ parameters.environment }}.tfstate"
+  - name: tfVarsFile
+    value: "environments/${{ parameters.environment }}.tfvars"
+
+stages:
+  # =========================================================================
+  # Stage 1: Validate
+  # =========================================================================
+  - stage: Validate
+    displayName: "Validate Terraform"
+    jobs:
+      - job: Validate
+        pool:
+          vmImage: "ubuntu-latest"
+        steps:
+          - task: TerraformInstaller@1
+            displayName: "Install Terraform"
+            inputs:
+              terraformVersion: "1.9.x"
+
+          - task: AzureCLI@2
+            displayName: "Terraform Init & Validate"
+            inputs:
+              azureSubscription: "$(AZURE_SERVICE_CONNECTION)"
+              scriptType: "bash"
+              scriptLocation: "inlineScript"
+              addSpnToEnvironment: true
+              workingDirectory: "$(tfWorkingDir)"
+              inlineScript: |
+                export ARM_CLIENT_ID=$servicePrincipalId
+                export ARM_OIDC_TOKEN=$idToken
+                export ARM_TENANT_ID=$tenantId
+                export ARM_SUBSCRIPTION_ID=$(az account show --query id -o tsv)
+                export ARM_USE_OIDC=true
+
+                terraform init \
+                  -backend-config="key=$(tfStateKey)"
+                terraform validate
+                terraform fmt -check -recursive
+
+  # =========================================================================
+  # Stage 2: Plan
+  # =========================================================================
+  - stage: Plan
+    displayName: "Terraform Plan"
+    dependsOn: Validate
+    jobs:
+      - job: Plan
+        pool:
+          vmImage: "ubuntu-latest"
+        steps:
+          - task: TerraformInstaller@1
+            inputs:
+              terraformVersion: "1.9.x"
+
+          - task: AzureCLI@2
+            displayName: "Terraform Plan"
+            inputs:
+              azureSubscription: "$(AZURE_SERVICE_CONNECTION)"
+              scriptType: "bash"
+              scriptLocation: "inlineScript"
+              addSpnToEnvironment: true
+              workingDirectory: "$(tfWorkingDir)"
+              inlineScript: |
+                export ARM_CLIENT_ID=$servicePrincipalId
+                export ARM_OIDC_TOKEN=$idToken
+                export ARM_TENANT_ID=$tenantId
+                export ARM_SUBSCRIPTION_ID=$(az account show --query id -o tsv)
+                export ARM_USE_OIDC=true
+
+                terraform init \
+                  -backend-config="key=$(tfStateKey)"
+                terraform plan \
+                  -var-file="$(tfVarsFile)" \
+                  -out=tfplan
+
+          - publish: "$(tfWorkingDir)/tfplan"
+            artifact: "tfplan-${{ parameters.environment }}"
+            displayName: "Publish Plan"
+
+  # =========================================================================
+  # Stage 3: Apply (with manual approval gate)
+  # =========================================================================
+  - stage: Apply
+    displayName: "Terraform Apply"
+    dependsOn: Plan
+    condition: and(succeeded(), eq('${{ parameters.action }}', 'apply'))
+    jobs:
+      - deployment: Apply
+        pool:
+          vmImage: "ubuntu-latest"
+        environment: "${{ parameters.environment }}"
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - checkout: self
+
+                - task: TerraformInstaller@1
+                  inputs:
+                    terraformVersion: "1.9.x"
+
+                - download: current
+                  artifact: "tfplan-${{ parameters.environment }}"
+
+                - task: AzureCLI@2
+                  displayName: "Terraform Apply"
+                  inputs:
+                    azureSubscription: "$(AZURE_SERVICE_CONNECTION)"
+                    scriptType: "bash"
+                    scriptLocation: "inlineScript"
+                    addSpnToEnvironment: true
+                    workingDirectory: "$(tfWorkingDir)"
+                    inlineScript: |
+                      export ARM_CLIENT_ID=$servicePrincipalId
+                      export ARM_OIDC_TOKEN=$idToken
+                      export ARM_TENANT_ID=$tenantId
+                      export ARM_SUBSCRIPTION_ID=$(az account show --query id -o tsv)
+                      export ARM_USE_OIDC=true
+
+                      terraform init \
+                        -backend-config="key=$(tfStateKey)"
+                      terraform apply -auto-approve \
+                        "$(Pipeline.Workspace)/tfplan-${{ parameters.environment }}/tfplan"
+
+                      # Export outputs for subsequent stages
+                      terraform output -json > $(Build.ArtifactStagingDirectory)/tf-outputs.json
+
+                - publish: "$(Build.ArtifactStagingDirectory)/tf-outputs.json"
+                  artifact: "tf-outputs-${{ parameters.environment }}"
+                  displayName: "Publish Terraform Outputs"
+
+  # =========================================================================
+  # Stage 4: Build & Deploy Container
+  # =========================================================================
+  - stage: Deploy
+    displayName: "Build & Deploy Container"
+    dependsOn: Apply
+    condition: succeeded()
+    jobs:
+      - job: BuildAndDeploy
+        pool:
+          vmImage: "ubuntu-latest"
+        steps:
+          - checkout: self
+
+          - download: current
+            artifact: "tf-outputs-${{ parameters.environment }}"
+
+          # Load Terraform outputs as pipeline variables
+          - task: Bash@3
+            displayName: "Load Terraform Outputs"
+            inputs:
+              targetType: "inline"
+              script: |
+                OUTPUTS_FILE="$(Pipeline.Workspace)/tf-outputs-${{ parameters.environment }}/tf-outputs.json"
+                # Set each output as a pipeline variable
+                jq -r 'to_entries[] | select(.value.value | type == "string") | "##vso[task.setvariable variable=\(.key)]\(.value.value)"' "$OUTPUTS_FILE"
+                jq -r 'to_entries[] | select(.value.value | type == "number") | "##vso[task.setvariable variable=\(.key)]\(.value.value | tostring)"' "$OUTPUTS_FILE"
+                jq -r 'to_entries[] | select(.value.value | type == "boolean") | "##vso[task.setvariable variable=\(.key)]\(.value.value | tostring)"' "$OUTPUTS_FILE"
+
+          # Build frontend
+          - task: NodeTool@0
+            displayName: "Install Node.js"
+            inputs:
+              versionSpec: "20.x"
+
+          - task: Bash@3
+            displayName: "Build Frontend"
+            inputs:
+              targetType: "inline"
+              workingDirectory: "app/frontend"
+              script: |
+                npm ci
+                npm run build
+
+          # Build and push Docker image
+          - task: AzureCLI@2
+            displayName: "Build & Push Docker Image"
+            inputs:
+              azureSubscription: "$(AZURE_SERVICE_CONNECTION)"
+              scriptType: "bash"
+              scriptLocation: "inlineScript"
+              inlineScript: |
+                ACR_NAME="$(azure_container_registry_name)"
+                ACR_SERVER="$(azure_container_registry_endpoint)"
+                IMAGE_TAG="${ACR_SERVER}/backend:$(Build.BuildId)"
+
+                az acr login --name "$ACR_NAME"
+                docker build -t "$IMAGE_TAG" app/backend
+                docker push "$IMAGE_TAG"
+
+                # Update Container App
+                az containerapp update \
+                  --name "$(backend_container_app_name)" \
+                  --resource-group "$(azure_resource_group)" \
+                  --image "$IMAGE_TAG"
+
+  # =========================================================================
+  # Stage 5: Post-Deploy (Document Ingestion)
+  # =========================================================================
+  - stage: PostDeploy
+    displayName: "Post-Deploy Tasks"
+    dependsOn: Deploy
+    condition: succeeded()
+    jobs:
+      - job: DocumentIngestion
+        pool:
+          vmImage: "ubuntu-latest"
+        steps:
+          - checkout: self
+
+          - download: current
+            artifact: "tf-outputs-${{ parameters.environment }}"
+
+          - task: UsePythonVersion@0
+            displayName: "Install Python"
+            inputs:
+              versionSpec: "3.11"
+
+          - task: AzureCLI@2
+            displayName: "Run Document Ingestion"
+            inputs:
+              azureSubscription: "$(AZURE_SERVICE_CONNECTION)"
+              scriptType: "bash"
+              scriptLocation: "inlineScript"
+              inlineScript: |
+                # Load Terraform outputs as env vars
+                OUTPUTS_FILE="$(Pipeline.Workspace)/tf-outputs-${{ parameters.environment }}/tf-outputs.json"
+                eval "$(jq -r 'to_entries[] | select(.value.value | type == "string") | "export \(.key | ascii_upcase)=\(.value.value)"' "$OUTPUTS_FILE")"
+
+                # Install dependencies
+                pip install -r app/backend/requirements.txt
+
+                # Run document ingestion
+                python ./app/backend/prepdocs.py './data/*' --verbose

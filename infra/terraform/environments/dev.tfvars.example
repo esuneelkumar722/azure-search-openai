@@ -1,0 +1,26 @@
+# =============================================================================
+# Development Environment Configuration (EXAMPLE)
+# Copy this file to dev.tfvars and fill in your values:
+#   cp dev.tfvars.example dev.tfvars
+# =============================================================================
+
+environment_name = "dev-openai-rag"
+location         = "eastus"
+
+# Your user principal ID (run: az ad signed-in-user show --query id -o tsv)
+principal_id = "<YOUR_PRINCIPAL_ID>"
+
+# OpenAI
+openai_location = "eastus"
+
+# Document Intelligence — limited regions: eastus, westus2, westeurope, australiaeast
+document_intelligence_location = "eastus"
+
+# Search
+search_service_sku_name      = "basic"
+search_semantic_ranker_level = "free"
+
+# Feature flags — default minimal deployment
+use_vectors              = true
+use_application_insights = true
+# All other feature flags default to false (minimal cost)

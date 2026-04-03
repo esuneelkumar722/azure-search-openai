@@ -1,0 +1,21 @@
+# Terraform state — contains resource IDs and sensitive data
+*.tfstate
+*.tfstate.backup
+.terraform/
+
+# Actual tfvars with real values — use .tfvars.example as template
+environments/*.tfvars
+!environments/*.tfvars.example
+
+# Terraform crash logs
+crash.log
+crash.*.log
+
+# Override files
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Local .md5 hash files from document ingestion
+*.md5
