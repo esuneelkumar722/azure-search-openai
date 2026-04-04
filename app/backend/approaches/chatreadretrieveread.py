@@ -17,6 +17,7 @@ from openai.types.chat.chat_completion_message import ChatCompletionMessage
 
 from approaches.approach import (
     Approach,
+    DataPoints,
     ExtraInfo,
     ThoughtStep,
 )
@@ -33,6 +34,15 @@ class ChatReadRetrieveReadApproach(Approach):
     """
 
     NO_RESPONSE = Approach.QUERY_REWRITE_NO_RESPONSE
+
+    CONVERSATIONAL_KEYWORDS = frozenset({
+        "hi", "hello", "hey", "thanks", "thank", "thank you", "ok", "okay",
+        "yes", "no", "nope", "yep", "bye", "goodbye", "good morning",
+        "good evening", "good afternoon", "good night", "great", "awesome",
+        "nice", "cool", "wow", "sure", "alright", "perfect", "got it",
+        "noted", "understood", "correct", "right", "exactly", "good", "fine",
+        "that", "correct", "is", "i", "am", "saying", "you", "gave", "answer",
+    })
 
     def __init__(
         self,
@@ -109,6 +119,44 @@ class ChatReadRetrieveReadApproach(Approach):
             return self.extract_rewritten_query(chat_completion, default_query, no_response_token=self.NO_RESPONSE)
         except Exception:
             return default_query
+
+    async def _is_conversational(self, message: str) -> bool:
+        """
+        Return True if the message is general conversation (greeting, acknowledgement, small talk)
+        rather than a document question. Uses keyword fast-path first, then GPT classification
+        for short ambiguous messages.
+        """
+        cleaned = message.strip().lower().rstrip("!.,?")
+        words = cleaned.split()
+        if not words:
+            return True
+        # Fast path: every word is a known conversational keyword
+        if all(w in self.CONVERSATIONAL_KEYWORDS for w in words):
+            return True
+        # Long messages are almost certainly document questions — skip GPT call
+        if len(words) > 20:
+            return False
+        # GPT classification for short ambiguous messages
+        response = await self.openai_client.chat.completions.create(
+            model=self.chatgpt_deployment or self.chatgpt_model,
+            messages=[
+                {
+                    "role": "system",
+                    "content": (
+                        "Classify the user message. Reply with exactly one word.\n"
+                        "GENERAL — if it is a greeting, small talk, acknowledgement, or general conversation "
+                        "(examples: 'Hi', 'Thanks', 'That is correct', 'Good morning').\n"
+                        "DOCUMENT — if it is a question or request about information, facts, or a specific topic "
+                        "(examples: 'What are the health benefits?', 'How many chapters?', 'Explain section 45')."
+                    ),
+                },
+                {"role": "user", "content": message},
+            ],
+            max_tokens=5,
+            temperature=0,
+        )
+        result = (response.choices[0].message.content or "").strip().upper()
+        return result.startswith("GENERAL")
 
     async def run_without_streaming(
         self,
@@ -258,6 +306,28 @@ class ChatReadRetrieveReadApproach(Approach):
     ) -> tuple[ExtraInfo, Awaitable[ChatCompletion] | Awaitable[AsyncStream[ChatCompletionChunk]]]:
         use_agentic_knowledgebase = True if overrides.get("use_agentic_knowledgebase") else False
         original_user_query = messages[-1]["content"]
+
+        # Conversational intent detection — skip retrieval for greetings / small talk
+        if isinstance(original_user_query, str) and await self._is_conversational(original_user_query):
+            empty_extra = ExtraInfo(data_points=DataPoints())
+
+            async def _conversational_call() -> ChatCompletion:
+                return await self.openai_client.chat.completions.create(
+                    model=self.chatgpt_deployment or self.chatgpt_model,
+                    messages=messages,
+                    temperature=0.7,
+                    stream=False,
+                )
+
+            async def _conversational_stream() -> AsyncStream[ChatCompletionChunk]:
+                return await self.openai_client.chat.completions.create(
+                    model=self.chatgpt_deployment or self.chatgpt_model,
+                    messages=messages,
+                    temperature=0.7,
+                    stream=True,
+                )
+
+            return (empty_extra, _conversational_call() if not should_stream else _conversational_stream())
 
         reasoning_model_support = self.GPT_REASONING_MODELS.get(self.chatgpt_model)
         if reasoning_model_support and (not reasoning_model_support.streaming and should_stream):
