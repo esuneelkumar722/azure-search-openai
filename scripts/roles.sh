@@ -1,4 +1,17 @@
 
+# =============================================================================
+# roles.sh  — FOR REFERENCE ONLY
+#
+# RBAC role assignments are fully managed by Terraform (modules/rbac).
+# You do NOT need to run this script if you deployed with terraform apply.
+#
+# Use this only if you need to manually assign roles outside of Terraform,
+# e.g., for a second user or a service principal in the same resource group.
+#
+# Variables needed (from .env or set manually):
+#   AZURE_RESOURCE_GROUP, AZURE_SUBSCRIPTION_ID, AZURE_PRINCIPAL_ID
+# =============================================================================
+
 roles=(
     "5e0bd9bd-7b93-4f28-af87-19fc36ad61bd" # Cognitive Services OpenAI User
     "2a2b9908-6ea1-4ae2-8e65-a410df84e7d1" # Storage Blob Data Reader

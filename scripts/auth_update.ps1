@@ -1,5 +1,28 @@
-$AZURE_USE_AUTHENTICATION = (azd env get-value AZURE_USE_AUTHENTICATION)
-if ($AZURE_USE_AUTHENTICATION -ne "true") {
+# =============================================================================
+# auth_update.ps1
+# Registers Container App redirect URIs with Entra ID App Registrations.
+# Updated to read from .env instead of azd.
+#
+# Run after auth_init.ps1 and after terraform apply (when BACKEND_URI is known).
+# =============================================================================
+
+$envFile = Join-Path (Get-Location) ".env"
+if (-Not (Test-Path $envFile)) {
+    Write-Error ".env file not found. Copy .env.example to .env and fill in your values."
+    exit 1
+}
+
+Get-Content $envFile | ForEach-Object {
+    if ($_ -match '^\s*([^#][^=]+)="?([^"]*)"?\s*$') {
+        $name = $matches[1].Trim()
+        $value = $matches[2].Trim()
+        if ($name -and -not $name.StartsWith('#')) {
+            [System.Environment]::SetEnvironmentVariable($name, $value, 'Process')
+        }
+    }
+}
+
+if ($env:AZURE_USE_AUTHENTICATION -ne "true") {
   Exit 0
 }
 

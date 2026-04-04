@@ -1,4 +1,5 @@
 import logging
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 from azure.search.documents.indexes._generated.models import (
@@ -16,6 +17,7 @@ from azure.search.documents.indexes.models import (
     SearchIndexerIndexProjection,
     SearchIndexerIndexProjectionSelector,
     SearchIndexerIndexProjectionsParameters,
+    IndexingSchedule,
     SearchIndexerSkillset,
     SplitSkill,
 )
@@ -181,6 +183,12 @@ class IntegratedVectorizerStrategy(Strategy):  # pragma: no cover
         elif self.document_action == DocumentAction.RemoveAll:
             await self.blob_manager.remove_blob()
 
+        # Schedule: daily at 00:00 UTC. Azure AI Search max interval is 24h.
+        tomorrow_midnight = (datetime.now(timezone.utc) + timedelta(days=1)).replace(
+            hour=0, minute=0, second=0, microsecond=0
+        )
+        indexer_schedule = IndexingSchedule(interval=timedelta(hours=24), start_time=tomorrow_midnight)
+
         # Create an indexer
         indexer = SearchIndexer(
             name=self.indexer_name,
@@ -188,6 +196,7 @@ class IntegratedVectorizerStrategy(Strategy):  # pragma: no cover
             skillset_name=self.skillset_name,
             target_index_name=self.search_info.index_name,
             data_source_name=self.data_source_name,
+            schedule=indexer_schedule,
         )
 
         indexer_client = self.search_info.create_search_indexer_client()

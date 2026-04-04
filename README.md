@@ -41,7 +41,8 @@ This template, the application code and configuration it contains, has been buil
   - [VS Code Dev Containers](#vs-code-dev-containers)
   - [Local environment](#local-environment)
 - [Deploying](#deploying)
-  - [Deploying again](#deploying-again)
+  - [Deploying again — infrastructure changes](#deploying-again--infrastructure-changes)
+  - [Deploying again — app code changes only](#deploying-again--app-code-changes-only)
 - [Running the development server](#running-the-development-server)
 - [Using the app](#using-the-app)
 - [Clean up](#clean-up)
@@ -105,9 +106,7 @@ either by deleting the resource group in the Portal or running `azd down`.
 
 ## Getting Started
 
-You have a few options for setting up this project.
-The easiest way to get started is GitHub Codespaces, since it will setup all the tools for you,
-but you can also [set it up locally](#local-environment) if desired.
+This project is deployed with **Terraform** — no `azd` required. Infrastructure is defined in `infra/terraform/` and the app runs on Azure Container Apps.
 
 ### GitHub Codespaces
 
@@ -129,103 +128,145 @@ A related option is VS Code Dev Containers, which will open the project in your 
 
 ### Local environment
 
-1. Install the required tools:
+Install the required tools:
 
-    - [Azure Developer CLI](https://aka.ms/azure-dev/install)
-    - [Python 3.10, 3.11, 3.12, 3.13, or 3.14](https://www.python.org/downloads/)
-      - **Important**: Python and the pip package manager must be in the path in Windows for the setup scripts to work.
-      - **Important**: Ensure you can run `python --version` from console. On Ubuntu, you might need to run `sudo apt install python-is-python3` to link `python` to `python3`.
-    - [Node.js 20+](https://nodejs.org/download/)
-    - [Git](https://git-scm.com/downloads)
-    - [Powershell 7+ (pwsh)](https://github.com/powershell/powershell) - For Windows users only.
-      - **Important**: Ensure you can run `pwsh.exe` from a PowerShell terminal. If this fails, you likely need to upgrade PowerShell.
-
-2. Create a new folder and switch to it in the terminal.
-3. Run this command to download the project code:
-
-    ```shell
-    azd init -t azure-search-openai-demo
-    ```
-
-    Note that this command will initialize a git repository, so you do not need to clone this repository.
+- [Python 3.10, 3.11, 3.12, 3.13, or 3.14](https://www.python.org/downloads/)
+  - **Important**: Python and pip must be in your PATH. On Ubuntu: `sudo apt install python-is-python3`
+- [Node.js 20+](https://nodejs.org/download/)
+- [Terraform 1.5+](https://developer.hashicorp.com/terraform/install)
+- [Azure CLI](https://docs.microsoft.com/cli/azure/install-azure-cli)
+- [Git](https://git-scm.com/downloads)
+- [PowerShell 7+ (pwsh)](https://github.com/powershell/powershell) — Windows only
 
 ## Deploying
 
-The steps below will provision Azure resources and deploy the application code to Azure Container Apps. To deploy to Azure App Service instead, follow [the app service deployment guide](docs/azure_app_service.md).
+The steps below provision all Azure resources and deploy the app to Azure Container Apps.
 
-1. Login to your Azure account:
+> **Cost notice**: The resources below will incur costs. Delete the resource group when not in use to avoid unnecessary charges (see [Clean up](#clean-up)).
 
-    ```shell
-    azd auth login
-    ```
-
-    For GitHub Codespaces users, if the previous command fails, try:
-
-   ```shell
-    azd auth login --use-device-code
-    ```
-
-1. Create a new azd environment:
-
-    ```shell
-    azd env new
-    ```
-
-    Enter a name that will be used for the resource group.
-    This will create a new folder in the `.azure` folder, and set it as the active environment for any calls to `azd` going forward.
-1. (Optional) This is the point where you can customize the deployment by setting environment variables, in order to [use existing resources](docs/deploy_existing.md), [enable optional features (such as auth or vision)](docs/deploy_features.md), or [deploy low-cost options](docs/deploy_lowcost.md), or [deploy with the Azure free trial](docs/deploy_freetrial.md).
-1. Run `azd up` - This will provision Azure resources and deploy this sample to those resources, including building the search index based on the files found in the `./data` folder.
-    - **Important**: Beware that the resources created by this command will incur immediate costs, primarily from the AI Search resource. These resources may accrue costs even if you interrupt the command before it is fully executed. You can run `azd down` or delete the resources manually to avoid unnecessary spending.
-    - You will be prompted to select two locations, one for the majority of resources and one for the OpenAI resource, which is currently a short list. That location list is based on the [OpenAI model availability table](https://learn.microsoft.com/azure/cognitive-services/openai/concepts/models#model-summary-table-and-region-availability) and may become outdated as availability changes.
-1. After the application has been successfully deployed you will see a URL printed to the console.  Click that URL to interact with the application in your browser.
-It will look like the following:
-
-!['Output from running azd up'](docs/images/endpoint.png)
-
-> NOTE: It may take 5-10 minutes after you see 'SUCCESS' for the application to be fully deployed. If you see a "Python Developer" welcome screen or an error page, then wait a bit and refresh the page.
-
-### Deploying again
-
-If you've only changed the backend/frontend code in the `app` folder, then you don't need to re-provision the Azure resources. You can just run:
+### 1. Log in to Azure
 
 ```shell
-azd deploy
+az login --tenant <your-tenant-id>
 ```
 
-If you've changed the infrastructure files (`infra` folder or `azure.yaml`), then you'll need to re-provision the Azure resources. You can do that by running:
+### 2. Configure and apply Terraform
 
-```shell
-azd up
+```powershell
+# Copy the example tfvars and fill in your values
+cd infra/terraform
+cp environments/dev.tfvars.example environments/dev.tfvars
+# Edit dev.tfvars — set principal_id to your Azure user object ID:
+#   az ad signed-in-user show --query id -o tsv
+
+terraform init
+terraform apply -var-file=environments/dev.tfvars
+```
+
+All Azure services (OpenAI, AI Search, Storage, Cosmos DB, Container Apps, RBAC, etc.) are provisioned in one step.
+
+### 3. Configure environment variables
+
+```powershell
+# Copy the example and fill in values from terraform output
+cp .env.example .env
+# In another terminal:
+terraform -chdir=infra/terraform output
+# Copy the output values into .env
+```
+
+See [`.env.example`](.env.example) for a full reference of all variables.
+
+### 4. Create a Python virtual environment and install dependencies
+
+```powershell
+python -m venv .venv
+.venv\Scripts\pip install -r app/backend/requirements.txt   # Windows
+# .venv/bin/pip install -r app/backend/requirements.txt    # Linux/Mac
+```
+
+### 5. Ingest documents into Azure AI Search
+
+```powershell
+# Windows (uses integrated vectorization — creates indexer, skillset, data source)
+.\scripts\prepdocs-terraform.ps1
+
+# Linux/Mac
+set -a && . ./.env && set +a
+.venv/bin/python app/backend/prepdocs.py './data/*' --verbose
+```
+
+This uploads your documents from `./data/` to Azure Blob Storage and triggers the AI Search indexer to chunk, embed, and index them automatically on a daily schedule.
+
+### 6. Build and deploy the app
+
+```powershell
+# Get resource names from Terraform output
+$ACR = terraform -chdir=infra/terraform output -raw container_registry_name
+$RG  = terraform -chdir=infra/terraform output -raw azure_resource_group
+$APP = terraform -chdir=infra/terraform output -raw backend_service_name
+
+# Build Docker image and push to Azure Container Registry
+az acr build --registry $ACR --image azure-search-openai:latest app/ --no-logs
+
+# Deploy to Container App
+az containerapp update `
+  --name $APP `
+  --resource-group $RG `
+  --image "$ACR.azurecr.io/azure-search-openai:latest"
+```
+
+The app URL is available from:
+
+```powershell
+terraform -chdir=infra/terraform output backend_uri
+```
+
+> NOTE: It may take 2-5 minutes after deployment for the Container App to become healthy. If you see an error page, wait and refresh.
+
+### Deploying again — infrastructure changes
+
+If you modify any Terraform files in `infra/terraform/`:
+
+```powershell
+terraform -chdir=infra/terraform apply -var-file=environments/dev.tfvars
+```
+
+### Deploying again — app code changes only
+
+If you only change code in the `app/` folder, just rebuild and redeploy:
+
+```powershell
+az acr build --registry $ACR --image azure-search-openai:latest app/ --no-logs
+az containerapp update --name $APP --resource-group $RG --image "$ACR.azurecr.io/azure-search-openai:latest"
 ```
 
 ## Running the development server
 
-You can only run a development server locally **after** having successfully run the `azd up` command. If you haven't yet, follow the [deploying](#deploying) steps above.
+After deploying to Azure, you can run the frontend locally against the live Azure backend:
 
-1. Run `azd auth login` if you have not logged in recently.
-2. Start the server:
+Windows:
 
-  Windows:
+```shell
+./app/start.ps1
+```
 
-  ```shell
-  ./app/start.ps1
-  ```
+Linux/Mac:
 
-  Linux/Mac:
+```shell
+./app/start.sh
+```
 
-  ```shell
-  ./app/start.sh
-  ```
+VS Code: Run the **"VS Code Task: Start App"** task.
 
-  VS Code: Run the "VS Code Task: Start App" task.
+Navigate to `http://127.0.0.1:50505`.
 
-It's also possible to enable hotloading or the VS Code debugger.
 See more tips in [the local development guide](docs/localdev.md).
 
 ## Using the app
 
-- In Azure: navigate to the Azure WebApp deployed by azd. The URL is printed out when azd completes (as "Endpoint"), or you can find it in the Azure portal.
-- Running locally: navigate to 127.0.0.1:50505
+- **In Azure**: navigate to the Container App URL from `terraform output backend_uri`.
+- **Locally**: navigate to `http://127.0.0.1:50505`
 
 Once in the web app:
 
@@ -235,13 +276,13 @@ Once in the web app:
 
 ## Clean up
 
-To clean up all the resources created by this sample:
+To delete all resources provisioned by Terraform:
 
-1. Run `azd down`
-2. When asked if you are sure you want to continue, enter `y`
-3. When asked if you want to permanently delete the resources, enter `y`
+```powershell
+terraform -chdir=infra/terraform destroy -var-file=environments/dev.tfvars
+```
 
-The resource group and all the resources will be deleted.
+All resources in the resource group will be deleted.
 
 ## Guidance
 
