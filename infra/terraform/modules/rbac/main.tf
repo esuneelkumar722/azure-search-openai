@@ -3,20 +3,20 @@
 # Consolidated from ~25 individual role.bicep calls in main.bicep
 # =============================================================================
 
-# Well-known role definition IDs
+# Well-known role names (using names instead of IDs to avoid subscription prefix mismatch)
 locals {
   roles = {
-    cognitive_services_openai_user   = "5e0bd9bd-7b93-4f28-af87-19fc36ad61bd"
-    cognitive_services_user          = "a97b65f3-24c7-4388-baec-2e87135dc908"
-    cognitive_services_speech_user   = "f2dc8367-1007-4938-bd23-fe263f013447"
-    storage_blob_data_reader        = "2a2b9908-6ea1-4ae2-8e65-a410df84e7d1"
-    storage_blob_data_contributor   = "ba92f5b4-2d11-453d-a403-e96b0029c9fe"
-    storage_blob_data_owner         = "b7e6dc6d-f1e8-4753-8033-0f276bb0955b"
-    search_index_data_reader        = "1407120a-92aa-4202-b7e9-c0e197c71c8f"
-    search_index_data_contributor   = "8ebe5a00-799e-43f5-93ac-243d3dce84a7"
-    search_service_contributor      = "7ca78c08-252a-4471-8644-bb5ff32d4ba0"
-    reader                          = "acdd72a7-3385-48ef-bd42-f606fba81ae7"
-    documentdb_account_contributor  = "5bd9cd88-fe45-4216-938b-f97437e15450"
+    cognitive_services_openai_user   = "Cognitive Services OpenAI User"
+    cognitive_services_user          = "Cognitive Services User"
+    cognitive_services_speech_user   = "Cognitive Services Speech User"
+    storage_blob_data_reader        = "Storage Blob Data Reader"
+    storage_blob_data_contributor   = "Storage Blob Data Contributor"
+    storage_blob_data_owner         = "Storage Blob Data Owner"
+    search_index_data_reader        = "Search Index Data Reader"
+    search_index_data_contributor   = "Search Index Data Contributor"
+    search_service_contributor      = "Search Service Contributor"
+    reader                          = "Reader"
+    documentdb_account_contributor  = "DocumentDB Account Contributor"
   }
 
   # Build the role assignments list dynamically based on feature flags
@@ -95,10 +95,10 @@ locals {
 resource "azurerm_role_assignment" "this" {
   for_each = { for ra in local.role_assignments : ra.name => ra }
 
-  scope              = each.value.scope
-  role_definition_id = "/providers/Microsoft.Authorization/roleDefinitions/${each.value.role_id}"
-  principal_id       = each.value.principal_id
-  principal_type     = each.value.principal_type
+  scope                = each.value.scope
+  role_definition_name = each.value.role_id
+  principal_id         = each.value.principal_id
+  principal_type       = each.value.principal_type
 }
 
 # =============================================================================

@@ -8,7 +8,7 @@
 terraform {
   backend "azurerm" {
     resource_group_name  = "rg-terraform-state"
-    storage_account_name = "<YOUR_STATE_STORAGE_ACCOUNT>"  # From bootstrap-state.sh output
+    storage_account_name = "stterraformstate5787bb68"  # From bootstrap-state.sh output
     container_name       = "tfstate"
     key                  = "azure-search-openai.tfstate"
     use_oidc             = false      # Set to true when using WIF in CI/CD pipeline

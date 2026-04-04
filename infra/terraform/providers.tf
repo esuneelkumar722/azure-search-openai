@@ -4,7 +4,7 @@ provider "azurerm" {
       purge_soft_delete_on_destroy = false
     }
     resource_group {
-      prevent_deletion_if_contains_resources = true
+      prevent_deletion_if_contains_resources = false
     }
   }
 }

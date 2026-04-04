@@ -1,5 +1,5 @@
 # =============================================================================
-# Development Environment Configuration (EXAMPLE)
+# Development Environment Configuration — Full Features (EXAMPLE)
 # Copy this file to dev.tfvars and fill in your values:
 #   cp dev.tfvars.example dev.tfvars
 # =============================================================================
@@ -16,11 +16,35 @@ openai_location = "eastus"
 # Document Intelligence — limited regions: eastus, westus2, westeurope, australiaeast
 document_intelligence_location = "eastus"
 
+# Vision
+vision_location = "eastus"
+
 # Search
 search_service_sku_name      = "basic"
 search_semantic_ranker_level = "free"
 
-# Feature flags — default minimal deployment
-use_vectors              = true
-use_application_insights = true
-# All other feature flags default to false (minimal cost)
+# Cosmos DB
+cosmosdb_sku_name = "serverless"
+
+# Auth — fill in after running scripts/auth_init.py
+# server_app_id  = "<FROM_AUTH_INIT>"
+# client_app_id  = "<FROM_AUTH_INIT>"
+# auth_tenant_id = "<YOUR_TENANT_ID>"
+
+# =============================================================================
+# Feature Flags — Full Deployment
+# =============================================================================
+use_vectors                  = true
+use_integrated_vectorization = true
+use_multimodal               = true
+use_authentication           = true
+use_chat_history_cosmos      = true
+use_user_upload              = true
+use_agentic_knowledgebase    = true
+use_application_insights     = true
+
+# Not enabled
+use_media_describer_azure_cu = false
+use_speech_output_azure      = false
+use_cloud_ingestion          = false
+use_private_endpoint         = false

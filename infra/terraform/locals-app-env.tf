@@ -52,8 +52,8 @@ locals {
     AZURE_OPENAI_SERVICE                  = local.is_azure_openai_host && local.deploy_azure_openai ? module.openai[0].name : ""
     AZURE_OPENAI_CHATGPT_DEPLOYMENT       = local.chatgpt.deployment_name
     AZURE_OPENAI_EMB_DEPLOYMENT           = local.embedding.deployment_name
-    AZURE_OPENAI_knowledgeBase_MODEL      = local.knowledge_base.model_name
-    AZURE_OPENAI_knowledgeBase_DEPLOYMENT = local.knowledge_base.deployment_name
+    AZURE_OPENAI_KNOWLEDGEBASE_MODEL      = var.use_agentic_knowledgebase ? local.knowledge_base.model_name : ""
+    AZURE_OPENAI_KNOWLEDGEBASE_DEPLOYMENT = var.use_agentic_knowledgebase ? local.knowledge_base.deployment_name : ""
     AZURE_OPENAI_API_KEY_OVERRIDE         = var.azure_openai_api_key
     AZURE_OPENAI_CUSTOM_URL               = var.azure_openai_custom_url
     OPENAI_API_KEY                        = var.openai_api_key

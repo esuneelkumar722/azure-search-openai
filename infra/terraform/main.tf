@@ -213,8 +213,8 @@ module "container_apps" {
   allowed_origins       = local.allowed_origins
 
   env_variables = local.app_env_variables
-  secrets       = var.use_authentication ? local.app_secrets : {}
-  env_secrets   = var.use_authentication ? local.app_env_secrets : []
+  secrets       = var.use_authentication && var.server_app_secret != "" ? local.app_secrets : {}
+  env_secrets   = var.use_authentication && var.server_app_secret != "" ? local.app_env_secrets : []
 }
 
 # =============================================================================
