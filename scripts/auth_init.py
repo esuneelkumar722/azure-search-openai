@@ -87,7 +87,23 @@ async def create_or_update_application_with_secret(
 
 
 def update_azd_env(name, val):
-    subprocess.run(f'azd env set {name} "{val}"', shell=True)
+    """Write env var to project-root .env file instead of azd env."""
+    env_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".env"))
+    lines = []
+    found = False
+    if os.path.exists(env_path):
+        with open(env_path, "r", encoding="utf-8") as f:
+            for line in f:
+                if line.startswith(f"{name}="):
+                    lines.append(f'{name}="{val}"\n')
+                    found = True
+                else:
+                    lines.append(line)
+    if not found:
+        lines.append(f'{name}="{val}"\n')
+    with open(env_path, "w", encoding="utf-8") as f:
+        f.writelines(lines)
+    print(f"Saved {name} to .env")
 
 
 def random_app_identifier():

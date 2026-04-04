@@ -250,8 +250,8 @@ module "rbac" {
 
   # Optional resource IDs (only available when feature flags are enabled)
   vision_id               = var.use_multimodal ? module.vision[0].id : ""
-  cosmosdb_account_name   = var.use_authentication && var.use_chat_history_cosmos ? module.cosmosdb[0].account_name : ""
-  cosmosdb_id             = var.use_authentication && var.use_chat_history_cosmos ? module.cosmosdb[0].id : ""
+  cosmosdb_account_name   = var.use_chat_history_cosmos ? module.cosmosdb[0].account_name : ""
+  cosmosdb_id             = var.use_chat_history_cosmos ? module.cosmosdb[0].id : ""
   user_storage_id         = var.use_user_upload ? module.user_storage[0].id : ""
   functions_principal_id  = var.use_cloud_ingestion ? module.functions[0].principal_id : ""
   client_app_id           = var.client_app_id
@@ -263,7 +263,7 @@ module "rbac" {
 
 module "cosmosdb" {
   source = "./modules/cosmosdb"
-  count  = var.use_authentication && var.use_chat_history_cosmos ? 1 : 0
+  count  = var.use_chat_history_cosmos ? 1 : 0
 
   resource_group_name = azurerm_resource_group.main.name
   location            = var.cosmosdb_location != "" ? var.cosmosdb_location : var.location

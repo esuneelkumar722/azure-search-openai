@@ -39,7 +39,7 @@ locals {
     USE_AGENTIC_KNOWLEDGEBASE             = tostring(var.use_agentic_knowledgebase)
     USE_CHAT_HISTORY_BROWSER              = tostring(var.use_chat_history_browser)
     USE_CHAT_HISTORY_COSMOS               = tostring(var.use_chat_history_cosmos)
-    AZURE_COSMOSDB_ACCOUNT                = var.use_authentication && var.use_chat_history_cosmos ? module.cosmosdb[0].account_name : ""
+    AZURE_COSMOSDB_ACCOUNT                = var.use_chat_history_cosmos ? module.cosmosdb[0].account_name : ""
     AZURE_CHAT_HISTORY_DATABASE           = var.chat_history_database_name
     AZURE_CHAT_HISTORY_CONTAINER          = var.chat_history_container_name
     AZURE_CHAT_HISTORY_VERSION            = var.chat_history_version
