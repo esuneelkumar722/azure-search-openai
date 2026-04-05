@@ -6,7 +6,6 @@ import azure.storage.filedatalake.aio
 import pytest
 from azure.search.documents.aio import SearchClient
 from azure.storage.filedatalake.aio import DataLakeDirectoryClient, DataLakeFileClient
-from quart.datastructures import FileStorage
 
 from prepdocslib.embeddings import OpenAIEmbeddings
 
@@ -72,7 +71,7 @@ async def test_upload_file(auth_client, monkeypatch, mock_data_lake_service_clie
     response = await auth_client.post(
         "/upload",
         headers={"Authorization": "Bearer test"},
-        files={"file": FileStorage(BytesIO(b"foo;bar"), filename="a.txt")},
+        files={"file": ("a.txt", BytesIO(b"foo;bar"), "text/plain")},
     )
     message = (await response.get_json())["message"]
     assert message == "File uploaded successfully"
@@ -112,7 +111,7 @@ async def test_upload_file_error_wrong_directory_owner(auth_client, monkeypatch,
     response = await auth_client.post(
         "/upload",
         headers={"Authorization": "Bearer test"},
-        files={"file": FileStorage(BytesIO(b"foo;bar"), filename="a.txt")},
+        files={"file": ("a.txt", BytesIO(b"foo;bar"), "text/plain")},
     )
     message = (await response.get_json())["message"]
     assert message == "Error uploading file, check server logs for details."

@@ -31,6 +31,7 @@ from openai.types.create_embedding_response import Usage
 
 import app
 import core
+from fastapi.testclient import TestClient
 from approaches.chatreadretrieveread import ChatReadRetrieveReadApproach
 from approaches.promptmanager import PromptManager
 from core.authentication import AuthenticationHelper
@@ -52,6 +53,65 @@ from .mocks import (
     mock_speak_text_success,
     mock_vision_response,
 )
+
+class _AppProxy:
+    """Proxy to let tests use client.app.config[KEY] like Quart test client."""
+
+    def __init__(self, fastapi_app):
+        self.state = fastapi_app.state
+
+    @property
+    def config(self):
+        return self.state.config
+
+
+class QuartCompatResponse:
+    """Wraps httpx/requests Response to expose Quart test-client-like API."""
+
+    def __init__(self, response):
+        self._r = response
+        self.status_code = response.status_code
+        self.headers = response.headers
+
+    @property
+    def content_type(self):
+        return self._r.headers.get("content-type", "")
+
+    @property
+    def access_control_allow_origin(self):
+        return self._r.headers.get("access-control-allow-origin")
+
+    async def get_json(self):
+        return self._r.json()
+
+    async def get_data(self):
+        return self._r.content
+
+
+class QuartCompatClient:
+    """Wraps starlette TestClient to expose Quart test-client-like async API."""
+
+    def __init__(self, sync_client, fastapi_app):
+        self._client = sync_client
+        self._app = fastapi_app
+
+    @property
+    def config(self):
+        return self._app.state.config
+
+    @property
+    def app(self):
+        return _AppProxy(self._app)
+
+    async def get(self, *args, **kwargs):
+        return QuartCompatResponse(self._client.get(*args, **kwargs))
+
+    async def post(self, *args, **kwargs):
+        return QuartCompatResponse(self._client.post(*args, **kwargs))
+
+    async def delete(self, *args, **kwargs):
+        return QuartCompatResponse(self._client.delete(*args, **kwargs))
+
 
 MockSearchIndex = SearchIndex(
     name="test",
@@ -649,13 +709,13 @@ async def client(
     mock_blob_container_client,
     mock_azurehttp_calls,
 ):
-    quart_app = app.create_app()
+    fastapi_app = app.create_app()
 
-    async with quart_app.test_app() as test_app:
-        test_app.app.config.update({"TESTING": True})
-        mock_openai_chatcompletion(test_app.app.config[app.CONFIG_OPENAI_CLIENT])
-        mock_openai_embedding(test_app.app.config[app.CONFIG_OPENAI_CLIENT])
-        yield test_app.test_client()
+    with TestClient(fastapi_app) as sync_client:
+        compat_client = QuartCompatClient(sync_client, fastapi_app)
+        mock_openai_chatcompletion(fastapi_app.state.config[app.CONFIG_OPENAI_CLIENT])
+        mock_openai_embedding(fastapi_app.state.config[app.CONFIG_OPENAI_CLIENT])
+        yield compat_client
 
 
 @pytest_asyncio.fixture(scope="function")
@@ -668,13 +728,13 @@ async def reasoning_client(
     mock_blob_container_client,
     mock_azurehttp_calls,
 ):
-    quart_app = app.create_app()
+    fastapi_app = app.create_app()
 
-    async with quart_app.test_app() as test_app:
-        test_app.app.config.update({"TESTING": True})
-        mock_openai_chatcompletion(test_app.app.config[app.CONFIG_OPENAI_CLIENT])
-        mock_openai_embedding(test_app.app.config[app.CONFIG_OPENAI_CLIENT])
-        yield test_app.test_client()
+    with TestClient(fastapi_app) as sync_client:
+        compat_client = QuartCompatClient(sync_client, fastapi_app)
+        mock_openai_chatcompletion(fastapi_app.state.config[app.CONFIG_OPENAI_CLIENT])
+        mock_openai_embedding(fastapi_app.state.config[app.CONFIG_OPENAI_CLIENT])
+        yield compat_client
 
 
 @pytest_asyncio.fixture(scope="function")
@@ -688,13 +748,13 @@ async def knowledgebase_client(
     mock_blob_container_client,
     mock_azurehttp_calls,
 ):
-    quart_app = app.create_app()
+    fastapi_app = app.create_app()
 
-    async with quart_app.test_app() as test_app:
-        test_app.app.config.update({"TESTING": True})
-        mock_openai_chatcompletion(test_app.app.config[app.CONFIG_OPENAI_CLIENT])
-        mock_openai_embedding(test_app.app.config[app.CONFIG_OPENAI_CLIENT])
-        yield test_app.test_client()
+    with TestClient(fastapi_app) as sync_client:
+        compat_client = QuartCompatClient(sync_client, fastapi_app)
+        mock_openai_chatcompletion(fastapi_app.state.config[app.CONFIG_OPENAI_CLIENT])
+        mock_openai_embedding(fastapi_app.state.config[app.CONFIG_OPENAI_CLIENT])
+        yield compat_client
 
 
 @pytest_asyncio.fixture(scope="function")
@@ -710,16 +770,13 @@ async def knowledgebase_auth_client(
     mock_confidential_client_success,
     mock_validate_token_success,
 ):
-    quart_app = app.create_app()
+    fastapi_app = app.create_app()
 
-    async with quart_app.test_app() as test_app:
-        test_app.app.config.update({"TESTING": True})
-        mock_openai_chatcompletion(test_app.app.config[app.CONFIG_OPENAI_CLIENT])
-        mock_openai_embedding(test_app.app.config[app.CONFIG_OPENAI_CLIENT])
-        client = test_app.test_client()
-        client.config = quart_app.config
-
-        yield client
+    with TestClient(fastapi_app) as sync_client:
+        compat_client = QuartCompatClient(sync_client, fastapi_app)
+        mock_openai_chatcompletion(fastapi_app.state.config[app.CONFIG_OPENAI_CLIENT])
+        mock_openai_embedding(fastapi_app.state.config[app.CONFIG_OPENAI_CLIENT])
+        yield compat_client
 
 
 @pytest_asyncio.fixture(scope="function")
@@ -732,14 +789,14 @@ async def client_with_expiring_token(
     mock_blob_container_client,
     mock_azurehttp_calls,
 ):
-    quart_app = app.create_app()
+    fastapi_app = app.create_app()
 
-    async with quart_app.test_app() as test_app:
-        test_app.app.config.update({"TESTING": True})
-        test_app.app.config.update({"azure_credential": MockAzureCredentialExpired()})
-        mock_openai_chatcompletion(test_app.app.config[app.CONFIG_OPENAI_CLIENT])
-        mock_openai_embedding(test_app.app.config[app.CONFIG_OPENAI_CLIENT])
-        yield test_app.test_client()
+    with TestClient(fastapi_app) as sync_client:
+        compat_client = QuartCompatClient(sync_client, fastapi_app)
+        fastapi_app.state.config["azure_credential"] = MockAzureCredentialExpired()
+        mock_openai_chatcompletion(fastapi_app.state.config[app.CONFIG_OPENAI_CLIENT])
+        mock_openai_embedding(fastapi_app.state.config[app.CONFIG_OPENAI_CLIENT])
+        yield compat_client
 
 
 @pytest_asyncio.fixture(params=auth_envs, scope="function")
@@ -769,16 +826,13 @@ async def auth_client(
 
     with mock.patch("app.AzureDeveloperCliCredential") as mock_default_azure_credential:
         mock_default_azure_credential.return_value = MockAzureCredential()
-        quart_app = app.create_app()
+        fastapi_app = app.create_app()
 
-        async with quart_app.test_app() as test_app:
-            quart_app.config.update({"TESTING": True})
-            mock_openai_chatcompletion(test_app.app.config[app.CONFIG_OPENAI_CLIENT])
-            mock_openai_embedding(test_app.app.config[app.CONFIG_OPENAI_CLIENT])
-            client = test_app.test_client()
-            client.config = quart_app.config
-
-            yield client
+        with TestClient(fastapi_app) as sync_client:
+            compat_client = QuartCompatClient(sync_client, fastapi_app)
+            mock_openai_chatcompletion(fastapi_app.state.config[app.CONFIG_OPENAI_CLIENT])
+            mock_openai_embedding(fastapi_app.state.config[app.CONFIG_OPENAI_CLIENT])
+            yield compat_client
 
 
 @pytest_asyncio.fixture(params=auth_public_envs, scope="function")
@@ -813,16 +867,13 @@ async def auth_public_documents_client(
 
     with mock.patch("app.AzureDeveloperCliCredential") as mock_default_azure_credential:
         mock_default_azure_credential.return_value = MockAzureCredential()
-        quart_app = app.create_app()
+        fastapi_app = app.create_app()
 
-        async with quart_app.test_app() as test_app:
-            quart_app.config.update({"TESTING": True})
-            mock_openai_chatcompletion(test_app.app.config[app.CONFIG_OPENAI_CLIENT])
-            mock_openai_embedding(test_app.app.config[app.CONFIG_OPENAI_CLIENT])
-            client = test_app.test_client()
-            client.config = quart_app.config
-
-            yield client
+        with TestClient(fastapi_app) as sync_client:
+            compat_client = QuartCompatClient(sync_client, fastapi_app)
+            mock_openai_chatcompletion(fastapi_app.state.config[app.CONFIG_OPENAI_CLIENT])
+            mock_openai_embedding(fastapi_app.state.config[app.CONFIG_OPENAI_CLIENT])
+            yield compat_client
 
 
 @pytest_asyncio.fixture(scope="function")
@@ -835,21 +886,21 @@ async def vision_client(
     mock_blob_container_client_exists,
     mock_azurehttp_calls,
 ):
-    quart_app = app.create_app()
+    fastapi_app = app.create_app()
 
-    async with quart_app.test_app() as test_app:
-        test_app.app.config.update({"TESTING": True})
-        mock_openai_chatcompletion(test_app.app.config[app.CONFIG_OPENAI_CLIENT])
-        mock_openai_embedding(test_app.app.config[app.CONFIG_OPENAI_CLIENT])
+    with TestClient(fastapi_app) as sync_client:
+        compat_client = QuartCompatClient(sync_client, fastapi_app)
+        mock_openai_chatcompletion(fastapi_app.state.config[app.CONFIG_OPENAI_CLIENT])
+        mock_openai_embedding(fastapi_app.state.config[app.CONFIG_OPENAI_CLIENT])
         mock_blob_service_client = BlobServiceClient(
             f"https://{os.environ['AZURE_STORAGE_ACCOUNT']}.blob.core.windows.net",
             credential=MockAzureCredential(),
             transport=MockTransport(),
             retry_total=0,  # Necessary to avoid unnecessary network requests during tests
         )
-        test_app.app.config[app.CONFIG_GLOBAL_BLOB_MANAGER].blob_service_client = mock_blob_service_client
+        fastapi_app.state.config[app.CONFIG_GLOBAL_BLOB_MANAGER].blob_service_client = mock_blob_service_client
 
-        yield test_app.test_client()
+        yield compat_client
 
 
 @pytest_asyncio.fixture(scope="function")
@@ -864,21 +915,21 @@ async def vision_auth_client(
     mock_blob_container_client_exists,
     mock_azurehttp_calls,
 ):
-    quart_app = app.create_app()
+    fastapi_app = app.create_app()
 
-    async with quart_app.test_app() as test_app:
-        test_app.app.config.update({"TESTING": True})
-        mock_openai_chatcompletion(test_app.app.config[app.CONFIG_OPENAI_CLIENT])
-        mock_openai_embedding(test_app.app.config[app.CONFIG_OPENAI_CLIENT])
+    with TestClient(fastapi_app) as sync_client:
+        compat_client = QuartCompatClient(sync_client, fastapi_app)
+        mock_openai_chatcompletion(fastapi_app.state.config[app.CONFIG_OPENAI_CLIENT])
+        mock_openai_embedding(fastapi_app.state.config[app.CONFIG_OPENAI_CLIENT])
         mock_blob_service_client = BlobServiceClient(
             f"https://{os.environ['AZURE_STORAGE_ACCOUNT']}.blob.core.windows.net",
             credential=MockAzureCredential(),
             transport=MockTransport(),
             retry_total=0,  # Necessary to avoid unnecessary network requests during tests
         )
-        test_app.app.config[app.CONFIG_GLOBAL_BLOB_MANAGER].blob_service_client = mock_blob_service_client
+        fastapi_app.state.config[app.CONFIG_GLOBAL_BLOB_MANAGER].blob_service_client = mock_blob_service_client
 
-        yield test_app.test_client()
+        yield compat_client
 
 
 @pytest.fixture

@@ -590,7 +590,7 @@ async def test_run_with_streaming_handles_non_stream_response(chat_approach, mon
 async def test_run_until_final_call_rejects_web_streaming(chat_approach):
     with pytest.raises(Exception, match="web source is enabled"):
         await chat_approach.run_until_final_call(
-            messages=[{"role": "user", "content": "Hello"}],
+            messages=[{"role": "user", "content": "What are all the health insurance benefit options available to full time employees under the company Northwind Health Plus standard plan?"}],
             overrides={"use_agentic_knowledgebase": True, "use_web_source": True},
             auth_claims={},
             should_stream=True,

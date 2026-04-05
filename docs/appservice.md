@@ -1,7 +1,7 @@
 # RAG chat: Debugging the app on App Service
 
-When you run `azd up` or `azd deploy`, it deploys your application to App Service,
-and displays the deployed endpoint in the console.
+When you run `terraform -chdir=infra/terraform apply -var-file=environments/dev.tfvars`, it provisions and deploys your application to App Service,
+and you can find the deployed endpoint in the Terraform output.
 
 If you encounter an error with that deployed app, you can debug the deployment using the tips below.
 

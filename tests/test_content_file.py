@@ -12,6 +12,7 @@ from azure.core.pipeline.transport import (
 from azure.storage.blob.aio import BlobServiceClient
 
 import app
+from fastapi.testclient import TestClient
 
 from .mocks import (
     MockAiohttpClientResponse,
@@ -21,8 +22,7 @@ from .mocks import (
 )
 
 
-@pytest.mark.asyncio
-async def test_content_file(monkeypatch, mock_env, mock_acs_search, mock_blob_container_client_exists):
+def test_content_file(monkeypatch, mock_env, mock_acs_search, mock_blob_container_client_exists):
 
     class MockTransport(AsyncHttpTransport):
         async def send(self, request: HttpRequest, **kwargs) -> AioHttpTransportResponse:
@@ -61,23 +61,22 @@ async def test_content_file(monkeypatch, mock_env, mock_acs_search, mock_blob_co
         retry_total=0,  # Necessary to avoid unnecessary network requests during tests
     )
 
-    quart_app = app.create_app()
-    async with quart_app.test_app() as test_app:
-        test_app.app.config[app.CONFIG_GLOBAL_BLOB_MANAGER].blob_service_client = mock_blob_service_client
+    fastapi_app = app.create_app()
+    with TestClient(fastapi_app) as client:
+        fastapi_app.state.config[app.CONFIG_GLOBAL_BLOB_MANAGER].blob_service_client = mock_blob_service_client
 
-        client = test_app.test_client()
-        response = await client.get("/content/notfound.pdf")
+        response = client.get("/content/notfound.pdf")
         assert response.status_code == 404
 
-        response = await client.get("/content/role_library.pdf")
+        response = client.get("/content/role_library.pdf")
         assert response.status_code == 200
         assert response.headers["Content-Type"] == "application/pdf"
-        assert await response.get_data() == b"test content"
+        assert response.content == b"test content"
 
-        response = await client.get("/content/role_library.pdf#page=10")
+        response = client.get("/content/role_library.pdf#page=10")
         assert response.status_code == 200
         assert response.headers["Content-Type"] == "application/pdf"
-        assert await response.get_data() == b"test content"
+        assert response.content == b"test content"
 
 
 @pytest.mark.asyncio

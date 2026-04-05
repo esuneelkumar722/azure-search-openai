@@ -6,6 +6,6 @@ COPY ./ /app
 
 RUN python -m pip install -r requirements.txt
 
-RUN python -m pip install gunicorn
+EXPOSE 8000
 
-CMD ["python3", "-m", "gunicorn", "-b", "0.0.0.0:8000", "main:app"]
+CMD ["python3", "-m", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]

@@ -1,6 +1,23 @@
 ---
-description: 'Fix and verify issues in app'
-tools: ['vscode', 'execute', 'read', 'edit', 'search', 'web', 'agent', 'azure-mcp/search', 'github/create_pull_request', 'github/issue_read', 'github/list_issues', 'github/search_issues', 'playwright/*', 'pylance-mcp-server/*', 'microsoftdocs/mcp/*']
+description: "Fix and verify issues in app"
+tools:
+  [
+    "vscode",
+    "execute",
+    "read",
+    "edit",
+    "search",
+    "web",
+    "agent",
+    "azure-mcp/search",
+    "github/create_pull_request",
+    "github/issue_read",
+    "github/list_issues",
+    "github/search_issues",
+    "playwright/*",
+    "pylance-mcp-server/*",
+    "microsoftdocs/mcp/*",
+  ]
 ---
 
 # Fixer Mode Instructions
@@ -16,13 +33,13 @@ You are in fixer mode. When given an issue to fix, follow these steps:
 You MUST check task output readiness before debugging, testing, or declaring work complete.
 
 - Start the app: Run the "Development" compound task (which runs both frontend and backend tasks) and check readiness from task output. Both must be in ready state:
-	- Frontend task: "Frontend: npm run dev"
-	- Backend task: "Backend: quart run"
+  - Frontend task: "Frontend: npm run dev"
+  - Backend task: "Backend: uvicorn"
 - Investigate and fix errors shown in the corresponding task terminal before proceeding. You may sometimes see an error with /auth_setup in frontend task, that's due to the backend server taking longer to startup, and can be ignored.
 - Both of the tasks provide hot reloading behavior:
-	- Frontend: Vite provides HMR; changes in the frontend are picked up automatically without restarting the task.
-	- Backend: Quart was started with --reload; Python changes trigger an automatic restart.
-	- If watchers seem stuck or output stops updating, stop the tasks and run the "Development" task again.
+  - Frontend: Vite provides HMR; changes in the frontend are picked up automatically without restarting the task.
+  - Backend: Uvicorn was started with --reload; Python changes trigger an automatic restart.
+  - If watchers seem stuck or output stops updating, stop the tasks and run the "Development" task again.
 - To interact with a running application, use the Playwright MCP server. If testing login, you will need to navigate to 'localhost' instead of '127.0.0.1' since that's the URL allowed by the Entra application.
 
 ## Running Python scripts
@@ -36,6 +53,6 @@ DO NOT check out a new branch unless explicitly confirmed - sometimes user is al
 
 ## Making the PR
 
-* Use the `github/create_pull_request` tool to create the PR.
-* Follow the `.github/PULL_REQUEST_TEMPLATE.md` format, with all sections filled out and appropriate checkboxes checked. If any section does not apply, write "N/A" in that section.
-* Includes "Fixes #<issue number>" sentence in the PR description to auto-close the issue when the PR is merged.
+- Use the `github/create_pull_request` tool to create the PR.
+- Follow the `.github/PULL_REQUEST_TEMPLATE.md` format, with all sections filled out and appropriate checkboxes checked. If any section does not apply, write "N/A" in that section.
+- Includes "Fixes #<issue number>" sentence in the PR description to auto-close the issue when the PR is merged.

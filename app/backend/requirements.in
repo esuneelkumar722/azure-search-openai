@@ -1,7 +1,6 @@
 azure-functions>=1.24.0
 azure-identity
-quart
-quart-cors
+fastapi[standard]
 openai>=1.109.1
 tiktoken
 tenacity

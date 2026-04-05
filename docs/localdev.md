@@ -13,10 +13,7 @@ After deploying the app to Azure, you may want to continue development locally. 
 
 ## Running development server from the command line
 
-You can only run locally **after** having successfully run the `azd up` command. If you haven't yet, follow the steps in [Azure deployment](../README.md#azure-deployment) above.
-
-1. Run `azd auth login`
-2. Start the server:
+You can only run locally **after** having successfully deployed to Azure with Terraform. If you haven't yet, follow the steps in [Azure deployment](../README.md#deploying) above.
 
   Windows:
 
@@ -81,12 +78,12 @@ What it does:
 
 * Starts two background tasks in dedicated panels:
   * "Frontend: npm run dev" from `app/frontend` (Vite HMR for instant frontend updates)
-  * "Backend: quart run" from `app/backend` (Quart with `--reload` for backend auto-restarts)
+  * "Backend: uvicorn" from `app/backend` (Uvicorn with `--reload` for backend auto-restarts)
 
 Readiness indicators:
 
 * Frontend is ready when Vite prints a Local URL, for example: `Local: http://localhost:5173/`.
-* Backend is ready when Hypercorn reports: `Running on http://127.0.0.1:50505` (port may vary).
+* Backend is ready when Uvicorn reports: `Application startup complete.` (port 50505).
 
 Tips:
 
@@ -132,13 +129,13 @@ You may want to save costs by developing against a local LLM server, such as
 [llamafile](https://github.com/Mozilla-Ocho/llamafile/). Note that a local LLM
 will generally be slower and not as sophisticated.
 
-Once the local LLM server is running and serving an OpenAI-compatible endpoint, set these environment variables:
+Once the local LLM server is running and serving an OpenAI-compatible endpoint, set these environment variables in your `.env` file:
 
 ```shell
-azd env set USE_VECTORS false
-azd env set OPENAI_HOST local
-azd env set OPENAI_BASE_URL <your local endpoint>
-azd env set AZURE_OPENAI_CHATGPT_MODEL local-model-name
+USE_VECTORS=false
+OPENAI_HOST=local
+OPENAI_BASE_URL=<your local endpoint>
+AZURE_OPENAI_CHATGPT_MODEL=local-model-name
 ```
 
 Then restart the local development server.
@@ -151,34 +148,34 @@ You should now be able to use the "Ask" tab.
 * The conversation history will be truncated using the GPT tokenizers, which may not be the same as the local model's tokenizer, so if you have a long conversation, you may end up with token limit errors.
 
 > [!NOTE]
-> You must set `OPENAI_HOST` back to a non-local value ("azure", "azure_custom", or "openai")
-> before running `azd up` or `azd provision`, since the deployed backend can't access your local server.
+> Set `OPENAI_HOST` back to a non-local value (`azure`, `azure_custom`, or `openai`)
+> in your `.env` file before re-deploying, since the deployed backend can't access your local server.
 
 ### Using Ollama server
 
-For example, to point at a local Ollama server running the `llama3.1:8b` model:
+For example, to point at a local Ollama server running the `llama3.1:8b` model, add to your `.env` file:
 
 ```shell
-azd env set OPENAI_HOST local
-azd env set OPENAI_BASE_URL http://localhost:11434/v1
-azd env set AZURE_OPENAI_CHATGPT_MODEL llama3.1:8b
-azd env set USE_VECTORS false
+OPENAI_HOST=local
+OPENAI_BASE_URL=http://localhost:11434/v1
+AZURE_OPENAI_CHATGPT_MODEL=llama3.1:8b
+USE_VECTORS=false
 ```
 
 If you're running the app inside a VS Code Dev Container, use this local URL instead:
 
 ```shell
-azd env set OPENAI_BASE_URL http://host.docker.internal:11434/v1
+OPENAI_BASE_URL=http://host.docker.internal:11434/v1
 ```
 
 ### Using llamafile server
 
-To point at a local llamafile server running on its default port:
+To point at a local llamafile server running on its default port, add to your `.env` file:
 
 ```shell
-azd env set OPENAI_HOST local
-azd env set OPENAI_BASE_URL http://localhost:8080/v1
-azd env set USE_VECTORS false
+OPENAI_HOST=local
+OPENAI_BASE_URL=http://localhost:8080/v1
+USE_VECTORS=false
 ```
 
 Llamafile does *not* require a model name to be specified.
@@ -186,5 +183,5 @@ Llamafile does *not* require a model name to be specified.
 If you're running the app inside a VS Code Dev Container, use this local URL instead:
 
 ```shell
-azd env set OPENAI_BASE_URL http://host.docker.internal:8080/v1
+OPENAI_BASE_URL=http://host.docker.internal:8080/v1
 ```

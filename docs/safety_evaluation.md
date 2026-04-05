@@ -10,16 +10,16 @@ When deploying a RAG app to production, you should evaluate the safety of the an
 
 In order to use the adversarial simulator and safety evaluators, you need an Azure AI project inside an Azure AI Hub.
 
-1. Run this command to tell `azd` to provision an Azure AI project and hub:
+1. Run this command to tell `terraform` to provision an Azure AI project and hub:
 
-    ```shell
-    azd env set USE_AI_PROJECT true
+    ```hcl
+    use_ai_project = true
     ```
 
 2. Then, run the following command to provision the project:
 
     ```shell
-    azd provision
+    terraform -chdir=infra/terraform apply -var-file=environments/dev.tfvars
     ```
 
 ## Simulate and evaluate adversarial users

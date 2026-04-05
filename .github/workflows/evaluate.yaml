@@ -105,7 +105,6 @@ jobs:
       USE_MEDIA_DESCRIBER_AZURE_CU: ${{ vars.USE_MEDIA_DESCRIBER_AZURE_CU }}
       USE_AI_PROJECT: ${{ vars.USE_AI_PROJECT }}
     steps:
-
       - name: Comment on pull request
         uses: actions/github-script@v8
         with:
@@ -161,9 +160,9 @@ jobs:
 
       - name: Refresh azd environment variables
         run: |
-            azd env refresh -e $AZURE_ENV_NAME --no-prompt
+          azd env refresh -e $AZURE_ENV_NAME --no-prompt
         env:
-            AZD_INITIAL_ENVIRONMENT_CONFIG: ${{ secrets.AZD_INITIAL_ENVIRONMENT_CONFIG }}
+          AZD_INITIAL_ENVIRONMENT_CONFIG: ${{ secrets.AZD_INITIAL_ENVIRONMENT_CONFIG }}
 
       - name: Build frontend
         run: |
@@ -178,7 +177,7 @@ jobs:
       - name: Run local server in background
         run: |
           cd app/backend
-          RUNNER_TRACKING_ID="" && (nohup python3 -m quart --app main:app run --port 50505 > serverlogs.out 2> serverlogs.err &)
+          RUNNER_TRACKING_ID="" && (nohup python3 -m uvicorn main:app --port 50505 > serverlogs.out 2> serverlogs.err &)
           cd ../..
 
       - name: Install evaluate dependencies
@@ -193,8 +192,8 @@ jobs:
         if: ${{ success() }}
         uses: actions/upload-artifact@v7
         with:
-            name: eval_result
-            path: ./evals/results/pr${{ github.event.issue.number }}
+          name: eval_result
+          path: ./evals/results/pr${{ github.event.issue.number }}
 
       - name: Upload server logs as build artifact
         uses: actions/upload-artifact@v7

@@ -6,7 +6,7 @@ These are advanced topics that are not necessary for a basic deployment.
 - Deploying:
   - [Troubleshooting deployment](docs/deploy_troubleshooting.md)
     - [Debugging the app on App Service](appservice.md)
-  - [Deploying with azd: deep dive and CI/CD](azd.md)
+  - [Terraform deployment and CI/CD](terraform_cicd.md)
   - [Deploying with existing Azure resources](deploy_existing.md)
   - [Deploying from a free account](deploy_lowcost.md)
   - [Enabling optional features](deploy_features.md)

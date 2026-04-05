@@ -23,23 +23,23 @@ With this feature enabled, the following changes are made:
 
 1. **Enable multimodal capabilities**
 
-   Set the azd environment variable to enable the multimodal feature:
+   Edit `infra/terraform/environments/dev.tfvars` and set the variable to enable the multimodal feature:
 
-   ```shell
-   azd env set USE_MULTIMODAL true
+   ```hcl
+   use_multimodal = true
    ```
 
 2. **Provision the multimodal resources**
 
-   Either run `azd up` if you haven't run it before, or run `azd provision` to provision the multimodal resources. This will create a new Azure AI Vision account and update the Azure AI Search index to include the new image embedding field.
+   Either run `terraform -chdir=infra/terraform apply -var-file=environments/dev.tfvars` if you haven't run it before, or run `terraform -chdir=infra/terraform apply -var-file=environments/dev.tfvars` to provision the multimodal resources. This will create a new Azure AI Vision account and update the Azure AI Search index to include the new image embedding field.
 
 3. **Re-index the data:**
 
    If you have already indexed data, you will need to re-index it to include the new image embeddings.
    We recommend creating a new Azure AI Search index to avoid conflicts with the existing index.
 
-   ```shell
-   azd env set AZURE_SEARCH_INDEX multimodal-index
+   ```hcl
+   search_index_name = "multimodal-index"
    ```
 
    Then delete the `.md5` hash files in the data folder(s) and run the data ingestion process again to re-index the data:
@@ -78,14 +78,14 @@ By default, it will retrieve using both text and image embeddings.
 
 To disable retrieval with text embeddings, run:
 
-```shell
-azd env set RAG_SEARCH_TEXT_EMBEDDINGS false
+```hcl
+rag_search_text_embeddings = false
 ```
 
 To disable retrieval with image embeddings, run:
 
-```shell
-azd env set RAG_SEARCH_IMAGE_EMBEDDINGS false
+```hcl
+rag_search_image_embeddings = false
 ```
 
 Many developers may find that they can turn off image embeddings and still have high quality retrieval, since the text embeddings are based off text chunks that include figure descriptions.
@@ -96,14 +96,14 @@ Set variables to control whether the chat completion model will use text inputs,
 
 To disable text inputs, run:
 
-```shell
-azd env set RAG_SEND_TEXT_SOURCES false
+```hcl
+rag_send_text_sources = false
 ```
 
 To disable image inputs, run:
 
-```shell
-azd env set RAG_SEND_IMAGE_SOURCES false
+```hcl
+rag_send_image_sources = false
 ```
 
 It is unlikely that you would want to turn off text sources, unless your RAG is based on documents that are 100% image-based.

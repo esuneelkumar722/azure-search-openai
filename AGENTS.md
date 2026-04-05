@@ -1,6 +1,6 @@
 # Instructions for Coding Agents
 
-This file contains instructions for developers working on the Azure Search and OpenAI demo application. It covers the overall code layout, how to add new data, how to add new azd environment variables, how to add new developer settings, and how to add tests for new features.
+This file contains instructions for developers working on the Azure Search and OpenAI demo application. It covers the overall code layout, how to add new data, how to add new Terraform variables, how to add new developer settings, and how to add tests for new features.
 
 Always keep this file up to date with any changes to the codebase or development process.
 If necessary, edit this file to ensure it accurately reflects the current state of the project.
@@ -8,7 +8,7 @@ If necessary, edit this file to ensure it accurately reflects the current state 
 ## Overall code layout
 
 * app: Contains the main application code, including frontend and backend.
-  * app/backend: Contains the Python backend code, written with Quart framework.
+  * app/backend: Contains the Python backend code, written with FastAPI framework.
     * app/backend/approaches: Contains the different approaches
       * app/backend/approaches/approach.py: Base class for all approaches
       * app/backend/approaches/chatreadretrieveread.py: Chat approach, includes query rewriting step first
@@ -62,15 +62,15 @@ If necessary, edit this file to ensure it accurately reflects the current state 
 
 New files should be added to the `data` folder, and then either run scripts/prepdocs.sh or scripts/prepdocs.ps1 to ingest the data.
 
-## Adding a new azd environment variable
+## Adding a new Terraform variable
 
-An azd environment variable is stored by the azd CLI for each environment. It is passed to the "azd up" command and can configure both provisioning options and application settings.
-When adding new azd environment variables, update:
+A Terraform variable is declared in `infra/terraform/variables.tf` or `infra/terraform/variables-feature-flags.tf` and set in `infra/terraform/environments/dev.tfvars`. It is passed to the `terraform -chdir=infra/terraform apply -var-file=environments/dev.tfvars` command and can configure both provisioning options and application settings.
+When adding new Terraform variables, update:
 
-1. infra/main.parameters.json : Add the new parameter with a Bicep-friendly variable name and map to the new environment variable
-1. infra/main.bicep: Add the new Bicep parameter at the top, and add it to the `appEnvVariables` object
-1. .azdo/pipelines/azure-dev.yml: Add the new environment variable under `env` section
-1. .github/workflows/azure-dev.yml: Add the new environment variable under `env` section
+1. `infra/terraform/variables.tf` or `infra/terraform/variables-feature-flags.tf`: Declare the new variable with a description and default value.
+1. `infra/terraform/main.tf`: Wire the variable into the `appEnvVariables` locals block or the appropriate module call.
+1. `.github/workflows/azure-dev.yml`: If the variable is set via a GitHub Actions secret or environment variable, add it there.
+1. `infra/terraform/environments/dev.tfvars.example`: Add the variable with an example value.
 
 You may also need to update:
 
@@ -207,10 +207,10 @@ Do not use single underscores in front of "private" methods or variables in Pyth
 
 ## Deploying the application
 
-To deploy the application, use the `azd` CLI tool. Make sure you have the latest version of the `azd` CLI installed. Then, run the following command from the root of the repository:
+To deploy the application, use the `terraform` CLI tool. Make sure you have the latest version of the `terraform` CLI installed. Then, run the following command from the root of the repository:
 
 ```shell
-azd up
+terraform -chdir=infra/terraform apply -var-file=environments/dev.tfvars
 ```
 
 That command will BOTH provision the Azure resources AND deploy the application code.
@@ -218,19 +218,19 @@ That command will BOTH provision the Azure resources AND deploy the application 
 If you only changed the Bicep templates and want to re-provision the Azure resources, run:
 
 ```shell
-azd provision
+terraform -chdir=infra/terraform apply -var-file=environments/dev.tfvars
 ```
 
 If you only changed the application code and want to re-deploy the code, run:
 
 ```shell
-azd deploy
+az acr build + az containerapp update
 ```
 
 If you are using cloud ingestion and only want to deploy individual functions, run the necessary deploy commands, for example:
 
 ```shell
-azd deploy document-extractor
-azd deploy figure-processor
-azd deploy text-processor
+az acr build + az containerapp update document-extractor
+az acr build + az containerapp update figure-processor
+az acr build + az containerapp update text-processor
 ```

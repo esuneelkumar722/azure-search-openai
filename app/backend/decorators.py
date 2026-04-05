@@ -1,59 +1,41 @@
 import logging
-from collections.abc import Callable
-from functools import wraps
-from typing import Any, TypeVar, cast
+from typing import Any
 
-from quart import abort, current_app, request
+from fastapi import HTTPException, Request
 
 from config import CONFIG_AUTH_CLIENT, CONFIG_SEARCH_CLIENT
 from core.authentication import AuthError
-from error import error_response
 
 
-def authenticated_path(route_fn: Callable[[str, dict[str, Any]], Any]):
+async def get_auth_claims(request: Request) -> dict[str, Any]:
     """
-    Decorator for routes that request a specific file that might require access control enforcement
+    FastAPI dependency for routes that require authentication.
+    Extracts auth claims from the Authorization header.
     """
-
-    @wraps(route_fn)
-    async def auth_handler(path=""):
-        # If authentication is enabled, validate the user can access the file
-        auth_helper = current_app.config[CONFIG_AUTH_CLIENT]
-        search_client = current_app.config[CONFIG_SEARCH_CLIENT]
-        authorized = False
-        try:
-            auth_claims = await auth_helper.get_auth_claims_if_enabled(request.headers)
-            authorized = await auth_helper.check_path_auth(path, auth_claims, search_client)
-        except AuthError:
-            abort(403)
-        except Exception as error:
-            logging.exception("Problem checking path auth %s", error)
-            return error_response(error, route="/content")
-
-        if not authorized:
-            abort(403)
-
-        return await route_fn(path, auth_claims)
-
-    return auth_handler
+    auth_helper = request.app.state.config[CONFIG_AUTH_CLIENT]
+    try:
+        return await auth_helper.get_auth_claims_if_enabled(request.headers)
+    except AuthError:
+        raise HTTPException(status_code=403)
 
 
-_C = TypeVar("_C", bound=Callable[..., Any])
-
-
-def authenticated(route_fn: _C) -> _C:
+async def get_path_auth_claims(request: Request, path: str) -> dict[str, Any]:
     """
-    Decorator for routes that might require access control. Unpacks Authorization header information into an auth_claims dictionary
+    Validates path-level access control and returns auth claims.
+    Called directly from route handlers (not via Depends) because it needs the path route parameter.
     """
+    auth_helper = request.app.state.config[CONFIG_AUTH_CLIENT]
+    search_client = request.app.state.config[CONFIG_SEARCH_CLIENT]
+    try:
+        auth_claims = await auth_helper.get_auth_claims_if_enabled(request.headers)
+        authorized = await auth_helper.check_path_auth(path, auth_claims, search_client)
+    except AuthError:
+        raise HTTPException(status_code=403)
+    except Exception as error:
+        logging.exception("Problem checking path auth %s", error)
+        raise HTTPException(status_code=500)
 
-    @wraps(route_fn)
-    async def auth_handler(*args, **kwargs):
-        auth_helper = current_app.config[CONFIG_AUTH_CLIENT]
-        try:
-            auth_claims = await auth_helper.get_auth_claims_if_enabled(request.headers)
-        except AuthError:
-            abort(403)
+    if not authorized:
+        raise HTTPException(status_code=403)
 
-        return await route_fn(auth_claims, *args, **kwargs)
-
-    return cast(_C, auth_handler)
+    return auth_claims

@@ -41,30 +41,37 @@ The pricing for the following features depends on the [optional features](./depl
 * [Azure Private DNS Resolver](https://azure.microsoft.com/pricing/details/dns/): Pricing is per month and zones.
 
 ⚠️ To avoid unnecessary costs, remember to take down your app if it's no longer in use,
-either by deleting the resource group in the Portal or running `azd down`.
+either by deleting the resource group in the Portal or running `terraform -chdir=infra/terraform destroy -var-file=environments/dev.tfvars`.
 You might also decide to delete the VPN Gateway when not in use.
 
 ## Deployment steps for private access
 
-1. Configure the azd environment variables to use private endpoints and a VPN gateway, with public network access disabled. This will allow you to connect to the chat app from inside the virtual network, but not from the public Internet.
+1. Edit `infra/terraform/environments/dev.tfvars` and set the variables to use private endpoints and a VPN gateway, with public network access disabled. This will allow you to connect to the chat app from inside the virtual network, but not from the public Internet.
+
+    ```hcl
+    use_private_endpoint   = true
+    use_vpn_gateway        = true
+    public_network_access  = "Disabled"
+    ```
+
+    Then re-apply Terraform:
 
     ```shell
-    azd env set AZURE_USE_PRIVATE_ENDPOINT true
-    azd env set AZURE_USE_VPN_GATEWAY true
-    azd env set AZURE_PUBLIC_NETWORK_ACCESS Disabled
-    azd up
+    terraform -chdir=infra/terraform apply -var-file=environments/dev.tfvars
     ```
 
 2. Provision all the Azure resources:
 
     ```bash
-    azd provision
+    terraform -chdir=infra/terraform apply -var-file=environments/dev.tfvars
     ```
 
 3. Once provisioning is complete, you will see an error when it tries to run the data ingestion script, because you are not yet connected to the VPN. That message should provide a URL for the VPN configuration file download. If you don't see that URL, run this command:
 
+    You can retrieve it from the Terraform output:
+
     ```bash
-    azd env get-value AZURE_VPN_CONFIG_DOWNLOAD_LINK
+    terraform -chdir=infra/terraform output vpn_config_download_link
     ```
 
     Open that link in your browser. Select "Download VPN client" to download a ZIP file containing the VPN configuration.
@@ -89,14 +96,16 @@ You might also decide to delete the VPN Gateway when not in use.
 
 8. Once you're successfully connected to VPN, you can run the data ingestion script:
 
+    Once connected to VPN, run the data ingestion script manually:
+
     ```bash
-    azd hooks run postprovision
+    ./scripts/prepdocs.sh
     ```
 
 9. Finally, you can deploy the app:
 
     ```bash
-    azd deploy
+    az acr build + az containerapp update
     ```
 
 ## Environment variables controlling private access

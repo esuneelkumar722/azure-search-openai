@@ -6,10 +6,10 @@ This repository includes an optional feature that uses [agentic retrieval from A
 
 1. **Enable agentic retrieval:**
 
-   Set the azd environment variable to enable the agentic retrieval feature:
+   Edit `infra/terraform/environments/dev.tfvars` and set the variable to enable the agentic retrieval feature:
 
-   ```shell
-   azd env set USE_AGENTIC_KNOWLEDGEBASE true
+   ```hcl
+   use_agentic_knowledgebase = true
    ```
 
 2. **(Optional) Customize the agentic retrieval model**
@@ -18,10 +18,10 @@ This repository includes an optional feature that uses [agentic retrieval from A
 
    To change the model, set the following environment variables appropriately:
 
-   ```shell
-   azd env set AZURE_OPENAI_KNOWLEDGEBASE_DEPLOYMENT knowledgebase
-   azd env set AZURE_OPENAI_KNOWLEDGEBASE_MODEL gpt-4.1-mini
-   azd env set AZURE_OPENAI_KNOWLEDGEBASE_MODEL_VERSION 2025-04-14
+   ```hcl
+   knowledge_base_deployment_name = "knowledgebase"
+   knowledge_base_model_name = "gpt-4.1-mini"
+   knowledge_base_model_version = "2025-04-14"
    ```
 
    You can only change it to one of the [supported models](https://learn.microsoft.com/azure/search/search-agentic-retrieval-how-to-create#supported-models).
@@ -32,8 +32,8 @@ This repository includes an optional feature that uses [agentic retrieval from A
 
    Override the default by setting the following environment variable:
 
-   ```shell
-   azd env set AZURE_SEARCH_KNOWLEDGEBASE_RETRIEVAL_REASONING_EFFORT low
+   ```hcl
+   knowledge_base_retrieval_reasoning_effort = "low"
    ```
 
    Use `minimal` for the lightest planning, `low` for additional query expansion, or `medium` for the most exhaustive (and most expensive) retrieval plans.
@@ -44,8 +44,8 @@ This repository includes an optional feature that uses [agentic retrieval from A
 
    **Web source:** Enables searching the public web for information.
 
-   ```shell
-   azd env set USE_WEB_SOURCE true
+   ```hcl
+   use_web_source = true
    ```
 
    > [!NOTE]
@@ -54,8 +54,8 @@ This repository includes an optional feature that uses [agentic retrieval from A
 
    **SharePoint source:** Enables searching SharePoint documents. Requires authentication to be enabled and uses the logged-in user's token via on-behalf-of flow.
 
-   ```shell
-   azd env set USE_SHAREPOINT_SOURCE true
+   ```hcl
+   use_sharepoint_source = true
    ```
 
    > [!NOTE]
@@ -66,7 +66,7 @@ This repository includes an optional feature that uses [agentic retrieval from A
 
 5. **Update the infrastructure and application:**
 
-   Execute `azd up` to provision the infrastructure changes (only the new model, if you ran `up` previously) and deploy the application code with the updated environment variables. The post-provision script will configure Azure AI Search with a Knowledge agent pointing at the search index.
+   Execute `terraform -chdir=infra/terraform apply -var-file=environments/dev.tfvars` to provision the infrastructure changes (only the new model, if you ran `up` previously) and deploy the application code with the updated environment variables. The post-provision script will configure Azure AI Search with a Knowledge agent pointing at the search index.
 
 6. **Try out the feature:**
 

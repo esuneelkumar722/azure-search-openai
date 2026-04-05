@@ -26,7 +26,7 @@ The frontend is built using [React](https://reactjs.org/) and [Fluent UI compone
 
 ## Customizing the backend
 
-The backend is built using [Quart](https://quart.palletsprojects.com/), a Python framework for asynchronous web applications. The backend code is stored in the `app/backend` folder. The frontend and backend communicate over HTTP using JSON or streamed NDJSON responses. Learn more in the [HTTP Protocol guide](http_protocol.md).
+The backend is built using [FastAPI](https://fastapi.tiangolo.com/), a Python framework for building APIs. The backend code is stored in the `app/backend` folder. The frontend and backend communicate over HTTP using JSON or streamed NDJSON responses. Learn more in the [HTTP Protocol guide](http_protocol.md).
 
 ### Chat approach
 

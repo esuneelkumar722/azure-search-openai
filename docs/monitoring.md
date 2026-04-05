@@ -20,13 +20,9 @@ To see any exceptions and server errors, navigate to the "Investigate -> Failure
 
 ## Dashboard
 
-You can see chart summaries on a dashboard by running the following command:
+You can see chart summaries in the Azure Portal by navigating to your Application Insights resource and using the built-in dashboards.
 
-```shell
-azd monitor
-```
-
-You can modify the contents of that dashboard by updating `infra/backend-dashboard.bicep`, which is a Bicep file that defines the dashboard contents and layout.
+You can modify the contents of that dashboard by updating `infra/terraform/modules/monitoring.tf`, which defines the dashboard resources and layout.
 
 ## Customizing the traces
 
@@ -59,4 +55,4 @@ See the [azure-monitor-opentelemetry](https://pypi.org/project/azure-monitor-ope
 
 By default, [opentelemetry-instrumentation-openai](https://pypi.org/project/opentelemetry-instrumentation-openai/) traces all requests made to the OpenAI API, including the messages and responses. To disable that for privacy reasons, set the `TRACELOOP_TRACE_CONTENT=false` environment variable.
 
-To set environment variables, update `appEnvVariables` in `infra/main.bicep` and re-run `azd up`.
+To set environment variables, update `appEnvVariables` in `infra/main.bicep` and re-run `terraform -chdir=infra/terraform apply -var-file=environments/dev.tfvars`.

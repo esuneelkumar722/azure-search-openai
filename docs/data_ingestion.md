@@ -102,7 +102,7 @@ If multimodal is enabled, that document will also include an `"images"` field an
 
 ## Local ingestion
 
-The [`prepdocs.py`](../app/backend/prepdocs.py) script is responsible for both uploading and indexing documents. The typical usage is to call it using `scripts/prepdocs.sh` (Mac/Linux) or `scripts/prepdocs.ps1` (Windows), as these scripts will set up a Python virtual environment and pass in the required parameters based on the current `azd` environment. You can pass additional arguments directly to the script, for example `scripts/prepdocs.ps1 --removeall`. Whenever `azd up` or `azd provision` is run, the script is called automatically.
+The [`prepdocs.py`](../app/backend/prepdocs.py) script is responsible for both uploading and indexing documents. The typical usage is to call it using `scripts/prepdocs.sh` (Mac/Linux) or `scripts/prepdocs.ps1` (Windows), as these scripts will set up a Python virtual environment and pass in the required parameters based on the current `terraform` environment. You can pass additional arguments directly to the script, for example `scripts/prepdocs.ps1 --removeall`. Whenever `terraform -chdir=infra/terraform apply -var-file=environments/dev.tfvars` or `terraform -chdir=infra/terraform apply -var-file=environments/dev.tfvars` is run, the script is called automatically.
 
 ![Diagram of the indexing process](images/diagram_prepdocs.png)
 
@@ -141,28 +141,28 @@ This project includes an optional feature to perform data ingestion in the cloud
 
 1. If you've previously deployed, delete the existing search index or create a new index. This feature cannot be used on existing index. In the newly created index schema, a new field 'parent_id' is added. This is used internally by the indexer to manage life cycle of chunks. Run this command to set a new index name:
 
-    ```shell
-    azd env set AZURE_SEARCH_INDEX cloudindex
+    ```hcl
+    search_index_name = "cloudindex"
     ```
 
 2. Run this command:
 
-    ```shell
-    azd env set USE_CLOUD_INGESTION true
+    ```hcl
+    use_cloud_ingestion = true
     ```
 
 3. Open `azure.yaml` and un-comment the document-extractor, figure-processor, and text-processor sections. Those are the Azure Functions apps that will be deployed and serve as Azure AI Search skills.
 
 4. (Recommended) Increase the capacity for the embedding model to the maximum quota allowed for your region/subscription, so that the Azure Functions can generate embeddings without hitting rate limits:
 
-    ```shell
-    azd env set AZURE_OPENAI_EMB_DEPLOYMENT_CAPACITY 400
+    ```hcl
+    embedding_deployment_capacity = 400
     ```
 
 5. Provision the new Azure Functions resources, deploy the function apps, and update the search indexer with:
 
     ```shell
-    azd up
+    terraform -chdir=infra/terraform apply -var-file=environments/dev.tfvars
     ```
 
 6. That will upload the documents in the `data/` folder to the Blob storage container, create the indexer and skillset, and run the indexer to ingest the data. You can monitor the indexer status from the portal.

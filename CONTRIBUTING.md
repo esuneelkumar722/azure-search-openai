@@ -18,7 +18,7 @@ contact [opencode@microsoft.com](mailto:opencode@microsoft.com) with any additio
 - [Running E2E tests](#running-e2e-tests)
 - [Code style](#code-style)
 - [Adding new features](#adding-new-features)
-  - [Adding new azd environment variables](#adding-new-azd-environment-variables)
+  - [Adding new Terraform variables](#adding-new-terraform-variables)
   - [Adding new UI strings](#adding-new-ui-strings)
 
 ## Submitting a Pull Request (PR)
@@ -135,14 +135,14 @@ that instructs Copilot (and other coding agents) about how to generate code for 
 
 If you are not using Copilot Agent mode, consult both that file and suggestions below.
 
-### Adding new azd environment variables
+### Adding new Terraform variables
 
-When adding new azd environment variables, please remember to update:
+When adding new Terraform variables, please remember to update:
 
-1. [main.parameters.json](./infra/main.parameters.json)
-1. [appEnvVariables in main.bicep](./infra/main.bicep)
-1. [ADO pipeline](.azdo/pipelines/azure-dev.yml).
-1. [Github workflows](.github/workflows/azure-dev.yml)
+1. [`infra/terraform/variables.tf` or `infra/terraform/variables-feature-flags.tf`](./infra/terraform/)
+1. [`infra/terraform/main.tf`](./infra/terraform/main.tf) — wire into `appEnvVariables` or the appropriate module call
+1. [Github workflows](.github/workflows/azure-dev.yml) — if the variable is set via a secret or env var
+1. [`infra/terraform/environments/dev.tfvars.example`](./infra/terraform/environments/dev.tfvars.example)
 
 ### Adding new UI strings
 

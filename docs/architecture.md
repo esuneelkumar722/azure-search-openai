@@ -21,7 +21,7 @@ graph TB
         end
 
         subgraph "Backend"
-            API[🐍 Python API<br/>Flask/Quart<br/>Chat Endpoints<br/>Document Upload<br/>Authentication]
+            API[🐍 Python API<br/>FastAPI<br/>Chat Endpoints<br/>Document Upload<br/>Authentication]
 
             subgraph "Approaches"
                 CRR[ChatReadRetrieveRead<br/>Approach]
@@ -184,4 +184,4 @@ The application can be deployed using:
 - **Azure Container Apps** (default): Serverless container hosting
 - **Azure App Service**: Traditional PaaS hosting option. See the [App Service hosting guide](appservice.md) for detailed instructions.
 
-Both options support the same feature set and can be configured through the Azure Developer CLI (azd).
+Both options support the same feature set and can be configured through Terraform variables in `dev.tfvars`.

@@ -1,51 +1,50 @@
 # RAG chat: Deploying with minimal costs
 
-This AI RAG chat application is designed to be easily deployed using the Azure Developer CLI, which provisions the infrastructure according to the Bicep files in the `infra` folder. Those files describe each of the Azure resources needed, and configures their SKU (pricing tier) and other parameters. Many Azure services offer a free tier, but the infrastructure files in this project do *not* default to the free tier as there are often limitations in that tier.
+This AI RAG chat application provisions Azure infrastructure using Terraform, defined in the `infra/terraform/` folder. Those files describe each of the Azure resources needed, and configure their SKU (pricing tier) and other parameters. Many Azure services offer a free tier, but the infrastructure files in this project do *not* default to the free tier as there are often limitations in that tier.
 
-However, if your goal is to minimize costs while prototyping your application, follow the steps below *before* running `azd up`. Once you've gone through these steps, return to the [deployment steps](../README.md#deploying).
+However, if your goal is to minimize costs while prototyping your application, follow the steps below *before* running `terraform -chdir=infra/terraform apply -var-file=environments/dev.tfvars`. Once you've gone through these steps, return to the [deployment steps](../README.md#deploying).
 
 [📺 Live stream: Deploying from a free account](https://www.youtube.com/watch?v=nlIyos0RXHw)
 
 1. Log in to your Azure account using the Azure Developer CLI:
 
     ```shell
-    azd auth login
+    az login
     ```
 
-1. Create a new azd environment for the free resource group:
+1. Create a `dev.tfvars` file from the example:
 
     ```shell
-    azd env new
+    cp infra/terraform/environments/dev.tfvars.example infra/terraform/environments/dev.tfvars
     ```
 
-    Enter a name that will be used for the resource group.
-    This will create a new folder in the `.azure` folder, and set it as the active environment for any calls to `azd` going forward.
+    Edit the file and set `resource_group_name` to the desired name for the resource group.
 
 1. Switch from Azure Container Apps to the free tier of Azure App Service:
 
     Azure Container Apps has a consumption-based pricing model that is very low cost, but it is not free, plus Azure Container Registry costs a small amount each month.
 
-    To deploy to App Service instead:
+    To deploy to App Service instead, edit `infra/terraform/environments/dev.tfvars` and set:
 
-    * Comment out `host: containerapp` and uncomment `host: appservice` in the [azure.yaml](../azure.yaml) file.
-    * Set the deployment target to `appservice`:
-
-        ```shell
-        azd env set DEPLOYMENT_TARGET appservice
+        ```hcl
+        deployment_target     = "appservice"
+        app_service_sku_name  = "F1"
         ```
 
-    * Set the App Service SKU to the free tier:
+    Then re-apply Terraform:
 
         ```shell
-        azd env set AZURE_APP_SERVICE_SKU F1
+        terraform -chdir=infra/terraform apply -var-file=environments/dev.tfvars
         ```
 
-    Limitation: You are only allowed a certain number of free App Service instances per region. If you have exceeded your limit in a region, you will get an error during the provisioning stage. If that happens, you can run `azd down`, then `azd env new` to create a new environment with a new region.
+    Limitation: You are only allowed a certain number of free App Service instances per region. If you have exceeded your limit in a region, you will get an error during the provisioning stage. If that happens, you can run `terraform -chdir=infra/terraform destroy -var-file=environments/dev.tfvars`, then `cp infra/terraform/environments/dev.tfvars.example infra/terraform/environments/dev.tfvars` to create a new environment with a new region.
 
 1. Use the free tier of Azure AI Search:
 
-    ```shell
-    azd env set AZURE_SEARCH_SERVICE_SKU free
+    Edit `infra/terraform/environments/dev.tfvars` and set:
+
+    ```hcl
+    search_service_sku_name = "free"
     ```
 
     Limitations:
@@ -58,8 +57,10 @@ However, if your goal is to minimize costs while prototyping your application, f
 
 1. Use the free tier of Azure Document Intelligence (used in analyzing files):
 
-    ```shell
-    azd env set AZURE_DOCUMENTINTELLIGENCE_SKU F0
+    Edit `infra/terraform/environments/dev.tfvars` and set:
+
+    ```hcl
+    document_intelligence_sku_name = "F0"
     ```
 
     **Limitation for PDF files:**
@@ -70,8 +71,10 @@ However, if your goal is to minimize costs while prototyping your application, f
       You can either use your own documents that are only 2-pages long,
       or you can use a local Python package for PDF parsing by setting:
 
-      ```shell
-      azd env set USE_LOCAL_PDF_PARSER true
+      Edit `infra/terraform/environments/dev.tfvars` and set:
+
+      ```hcl
+      use_local_pdf_parser = true
       ```
 
     **Limitation for HTML files:**
@@ -81,14 +84,18 @@ However, if your goal is to minimize costs while prototyping your application, f
       You can either use your own files that are only 2-pages long,
       or you can use a local Python package for HTML parsing by setting:
 
-      ```shell
-      azd env set USE_LOCAL_HTML_PARSER true
+      Edit `infra/terraform/environments/dev.tfvars` and set:
+
+      ```hcl
+      use_local_html_parser = true
       ```
 
 1. Use the free tier of Azure Cosmos DB:
 
-    ```shell
-    azd env set AZURE_COSMOSDB_SKU free
+    Edit `infra/terraform/environments/dev.tfvars` and set:
+
+    ```hcl
+    cosmosdb_sku_name = "free"
     ```
 
     Limitation: You can have only one free Cosmos DB account. To keep your account free of charge, ensure that you do not exceed the free tier limits. For more information, see the [Azure Cosmos DB lifetime free tier](https://learn.microsoft.com/azure/cosmos-db/free-tier).
@@ -97,8 +104,10 @@ However, if your goal is to minimize costs while prototyping your application, f
 
     Turn off Azure Monitor (Application Insights):
 
-    ```shell
-    azd env set AZURE_USE_APPLICATION_INSIGHTS false
+    Edit `infra/terraform/environments/dev.tfvars` and set:
+
+    ```hcl
+    use_application_insights = false
     ```
 
     Application Insights is quite inexpensive already, so turning this off may not be worth the costs saved,
@@ -106,10 +115,12 @@ However, if your goal is to minimize costs while prototyping your application, f
 
 1. Use OpenAI.com instead of Azure OpenAI: This should not be necessary, as the costs are same for both services, but you may need this step if your account does not have access to Azure OpenAI for some reason.
 
-    ```shell
-    azd env set OPENAI_HOST openai
-    azd env set OPENAI_ORGANIZATION {Your OpenAI organization}
-    azd env set OPENAI_API_KEY {Your OpenAI API key}
+    Edit `infra/terraform/environments/dev.tfvars` and set:
+
+    ```hcl
+    openai_host         = "openai"
+    openai_api_organization = "{Your OpenAI organization}"
+    openai_api_key      = "{Your OpenAI API key}"
     ```
 
     Both Azure OpenAI and openai.com OpenAI accounts will incur costs, based on tokens used,
@@ -117,8 +128,10 @@ However, if your goal is to minimize costs while prototyping your application, f
 
 1. Disable vector search:
 
-    ```shell
-    azd env set USE_VECTORS false
+    Edit `infra/terraform/environments/dev.tfvars` and set:
+
+    ```hcl
+    use_vectors = false
     ```
 
     By default, the application computes vector embeddings for documents during the data ingestion phase,
@@ -127,7 +140,7 @@ However, if your goal is to minimize costs while prototyping your application, f
     so the benefits of vector search would typically outweigh the costs, but it is possible to disable vector support.
     If you do so, the application will fall back to a keyword search, which is less accurate.
 
-1. Once you've made the desired customizations, follow the steps in the README [to run `azd up`](../README.md#deploying-from-scratch). We recommend using "eastus" as the region, for availability reasons.
+1. Once you've made the desired customizations, follow the steps in the README [to run `terraform -chdir=infra/terraform apply -var-file=environments/dev.tfvars`](../README.md#deploying-from-scratch). We recommend using "eastus" as the region, for availability reasons.
 
 ## Reducing costs locally
 

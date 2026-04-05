@@ -60,34 +60,34 @@ Two Microsoft Entra applications must be registered in order to make the optiona
 
 ### Automatic Setup
 
-The easiest way to setup the two apps is to use the `azd` CLI. We've written scripts that will automatically create the two apps and configure them for use with the sample. To trigger the automatic setup, run the following commands:
+The easiest way to setup the two apps is to use the `terraform` CLI. We've written scripts that will automatically create the two apps and configure them for use with the sample. To trigger the automatic setup, run the following commands:
 
 1. **Enable authentication for the app**
   Run the following command to show the login UI and use Entra authentication by default:
 
-    ```shell
-    azd env set AZURE_USE_AUTHENTICATION true
+    ```hcl
+    use_authentication = true
     ```
 
 1. (Optional) **Enforce access control**
   To ensure that the app restricts search results to only documents that the user has access to, run the following command:
 
-    ```shell
-    azd env set AZURE_ENFORCE_ACCESS_CONTROL true
+    ```hcl
+    enforce_access_control = true
     ```
 
 1. (Optional) **Allow global document access**
   To allow upload of documents that have global access when there are no document-specific access controls assigned, run the following command:
 
-    ```shell
-    azd env set AZURE_ENABLE_GLOBAL_DOCUMENT_ACCESS true
+    ```hcl
+    enable_global_document_access = true
     ```
 
 1. (Optional) **Allow unauthenticated access**
   To allow unauthenticated users to use the app, run the following command:
 
-    ```shell
-    azd env set AZURE_ENABLE_UNAUTHENTICATED_ACCESS true
+    ```hcl
+    enable_unauthenticated_access = true
     ```
 
     Note: These users will not be able to search on documents that have access control assigned, so `AZURE_ENABLE_GLOBAL_DOCUMENT_ACCESS` should also be set to true to give them access to the remaining documents.
@@ -95,15 +95,15 @@ The easiest way to setup the two apps is to use the `azd` CLI. We've written scr
 1. **Set the authentication tenant ID**
   Specify the tenant ID associated with authentication by running:
 
-    ```shell
-    azd env set AZURE_AUTH_TENANT_ID <YOUR-TENANT-ID>
+    ```hcl
+    auth_tenant_id = "<YOUR-TENANT-ID>"
     ```
 
 1. **Login to the authentication tenant (if needed)**
   If your auth tenant ID is different from your currently logged in tenant ID, run:
 
     ```shell
-    azd auth login --tenant-id <YOUR-TENANT-ID>
+    az login --tenant-id <YOUR-TENANT-ID>
     ```
 
 1. **Enable access control on your search index (if it already exists)**
@@ -120,7 +120,7 @@ The easiest way to setup the two apps is to use the `azd` CLI. We've written scr
   Finally, run the following command to provision and deploy the app:
 
     ```shell
-    azd up
+    terraform -chdir=infra/terraform apply -var-file=environments/dev.tfvars
     ```
 
 ### Manual Setup
@@ -137,7 +137,7 @@ The following instructions explain how to setup the two apps using the Azure Por
   - Under **Supported account types**, select **Accounts in this organizational directory only**.
 - Select **Register** to create the application
 - In the app's registration screen, find the **Application (client) ID**.
-  - Run the following `azd` command to save this ID: `azd env set AZURE_SERVER_APP_ID <Application (client) ID>`.
+  - Run the following `terraform` command to save this ID: .
 
 - Microsoft Entra supports three types of credentials to authenticate an app using the [client credentials](https://learn.microsoft.com/entra/identity-platform/v2-oauth2-client-creds-grant-flow): passwords (app secrets), certificates, and federated identity credentials. For a higher level of security, either [certificates](https://learn.microsoft.com/entra/identity-platform/howto-create-self-signed-certificate) or federated identity credentials are recommended. This sample currently uses an app secret for ease of provisioning.
 
@@ -146,7 +146,7 @@ The following instructions explain how to setup the two apps using the Azure Por
   - Type a description, for example `Azure Search OpenAI Chat Key`.
   - Select one of the available key durations.
   - The generated key value will be displayed after you select **Add**.
-  - Copy the generated key value and run the following `azd` command to save this ID: `azd env set AZURE_SERVER_APP_SECRET <generated key value>`.
+  - Copy the generated key value and run the following `terraform` command to save this ID: .
 - Select **API Permissions** in the left hand menu. By default, the [delegated `User.Read`](https://learn.microsoft.com/graph/permissions-reference#user-permissions) permission should be present. This permission is required to read the signed-in user's profile.
   - Select **Add a permission**, and then **Microsoft Graph**.
   - Select **Delegated permissions**.
@@ -182,13 +182,13 @@ The following instructions explain how to setup the two apps using the Azure Por
   - Under **Supported account types**, select **Accounts in this organizational directory only**.
   - Under `Redirect URI (optional)` section, select `Single-page application (SPA)` in the combo-box and enter the following redirect URI:
     - If you are running the sample locally, add the endpoints `http://localhost:50505/redirect` and `http://localhost:5173/redirect`
-    - If you are running the sample on Azure, add the endpoints provided by `azd up`: `https://<your-endpoint>.azurewebsites.net/redirect`.
+    - If you are running the sample on Azure, add the endpoints provided by `terraform -chdir=infra/terraform apply -var-file=environments/dev.tfvars`: `https://<your-endpoint>.azurewebsites.net/redirect`.
     - If you are running the sample from Github Codespaces, add the Codespaces endpoint: `https://<your-codespace>-50505.app.github.dev/redirect`
 - Select **Register** to create the application
 - In the app's registration screen, find the **Application (client) ID**.
-  - Run the following `azd` command to save this ID: `azd env set AZURE_CLIENT_APP_ID <Application (client) ID>`.
+  - Run the following `terraform` command to save this ID: .
 - In the left hand menu, select **Authentication**.
-  - Under Web, add a redirect URI with the endpoint provided by `azd up`: `https://<your-endpoint>.azurewebsites.net/.auth/login/aad/callback`.
+  - Under Web, add a redirect URI with the endpoint provided by `terraform -chdir=infra/terraform apply -var-file=environments/dev.tfvars`: `https://<your-endpoint>.azurewebsites.net/.auth/login/aad/callback`.
   - Under **Implicit grant and hybrid flows**, select **ID Tokens (used for implicit and hybrid flows)**
   - Select **Save**
 - In the left hand menu, select **API permissions**. You will add permission to access the **access_as_user** API on the server app. This permission is required for the [On Behalf Of Flow](https://learn.microsoft.com/entra/identity-platform/v2-oauth2-on-behalf-of-flow#protocol-diagram) to work.
@@ -214,7 +214,7 @@ Consent from the user must be obtained for use of the client and server app. The
 
 ### Troubleshooting Entra setup
 
-- If your primary tenant restricts the ability to create Entra applications, you'll need to use a separate tenant to create the Entra applications. You can create a new tenant by following [these instructions](https://learn.microsoft.com/entra/identity-platform/quickstart-create-new-tenant). Then run `azd env set AZURE_AUTH_TENANT_ID <YOUR-AUTH-TENANT-ID>` before running `azd up`.
+- If your primary tenant restricts the ability to create Entra applications, you'll need to use a separate tenant to create the Entra applications. You can create a new tenant by following [these instructions](https://learn.microsoft.com/entra/identity-platform/quickstart-create-new-tenant). Then run  before running `terraform -chdir=infra/terraform apply -var-file=environments/dev.tfvars`.
 - If any Entra apps need to be recreated, you can avoid redeploying the app by [changing the app settings in the portal](https://learn.microsoft.com/azure/app-service/configure-common?tabs=portal#configure-app-settings). Any of the [required environment variables](#environment-variables-reference) can be changed. Once the environment variables have been changed, restart the web app.
 - It's possible a consent dialog will not appear when you log into the app for the first time. If this consent dialog doesn't appear, you will be unable to use the security filters because the API server app does not have permission to read your authorization information. A consent dialog can be forced to appear by adding `"prompt": "consent"` to the `loginRequest` property in [`authentication.py`](/app/backend/core/authentication.py)
 - It's possible that your tenant admin has placed a restriction on consent to apps with [unverified publishers](https://learn.microsoft.com/entra/identity-platform/publisher-verification-overview). In this case, only admins may consent to the client and server apps, and normal user accounts are unable to use the login system until the admin consents on behalf of the entire organization.
@@ -259,11 +259,11 @@ The document extractor parses the POSIX-style ACL string from ADLS Gen2 (e.g., `
 
 1. **Enable cloud ingestion and ACLs**
 
-   ```shell
-   azd env set USE_CLOUD_INGESTION true
-   azd env set USE_CLOUD_INGESTION_ACLS true
-   azd env set AZURE_USE_AUTHENTICATION true
-   azd env set AZURE_ENFORCE_ACCESS_CONTROL true
+   ```hcl
+   use_cloud_ingestion = true
+   use_cloud_ingestion_acls = true
+   use_authentication = true
+   enforce_access_control = true
    ```
 
 2. **Configure the storage account**
@@ -273,7 +273,7 @@ The document extractor parses the POSIX-style ACL string from ADLS Gen2 (e.g., `
 3. **Deploy the application**
 
    ```shell
-   azd up
+   terraform -chdir=infra/terraform apply -var-file=environments/dev.tfvars
    ```
 
    This provisions the Azure Functions (document-extractor, figure-processor, text-processor), creates an ADLS Gen2 storage account for documents with ACLs, configures the search indexer with ADLS Gen2 data source type, and sets up managed identity authentication.
@@ -306,9 +306,14 @@ To make specific documents accessible to all authenticated users (global access)
 
 1. **Set the environment variable**: Enable global document access support:
 
+   ```hcl
+   enable_global_document_access = true
+   ```
+
+   Then re-apply Terraform:
+
    ```shell
-   azd env set AZURE_ENABLE_GLOBAL_DOCUMENT_ACCESS true
-   azd up
+   terraform -chdir=infra/terraform apply -var-file=environments/dev.tfvars
    ```
 
 2. **Set the "other" ACL on the file**: In ADLS Gen2, the "other" ACL entry controls access for any authenticated user who doesn't match a specific user or group ACL. Grant read permission to "other" on files that should be globally accessible. See [Set ACLs in Azure Data Lake Storage Gen2](https://learn.microsoft.com/azure/storage/blobs/data-lake-storage-acl-azure-portal) for instructions.
@@ -323,17 +328,17 @@ If you already have an Azure Data Lake Storage Gen2 account with documents and A
 
 1. **Enable cloud ingestion with existing ADLS**
 
-   ```shell
-   azd env set USE_CLOUD_INGESTION true
-   azd env set USE_CLOUD_INGESTION_ACLS true
-   azd env set USE_EXISTING_ADLS_STORAGE true
-   azd env set AZURE_ADLS_GEN2_STORAGE_ACCOUNT <your-existing-adls-account-name>
+   ```hcl
+   use_cloud_ingestion = true
+   use_cloud_ingestion_acls = true
+   use_existing_adls_storage = true
+   adls_gen2_storage_account_name = "<your-existing-adls-account-name>"
    ```
 
    If your ADLS account is in a different resource group than the one being provisioned, also set:
 
-   ```shell
-   azd env set AZURE_ADLS_GEN2_STORAGE_RESOURCE_GROUP <your-adls-resource-group>
+   ```hcl
+   adls_gen2_storage_resource_group_name = "<your-adls-resource-group>"
    ```
 
    If not specified, the resource group defaults to the main resource group being provisioned.
@@ -341,7 +346,7 @@ If you already have an Azure Data Lake Storage Gen2 account with documents and A
 2. **Deploy the application**
 
    ```shell
-   azd up
+   terraform -chdir=infra/terraform apply -var-file=environments/dev.tfvars
    ```
 
    The deployment will automatically assign the necessary RBAC roles on your ADLS storage account:
@@ -358,7 +363,7 @@ This script tests three different search scenarios:
 
 1. **Search without ACL headers/tokens**: Returns only documents accessible without user credentials (documents without ACL restrictions or with global access `["all"]`)
 2. **Search with user token**: Uses `x-ms-query-source-authorization` header to filter results based on the current user's permissions
-3. **Search with elevated read**: Uses `x-ms-enable-elevated-read` header to bypass ACL filtering and show all documents with their `oids` and `groups` fields (useful for debugging). This step requires the "Search Index Data Contributor" role, which is now automatically assigned to the developer that runs `azd up`.
+3. **Search with elevated read**: Uses `x-ms-enable-elevated-read` header to bypass ACL filtering and show all documents with their `oids` and `groups` fields (useful for debugging). This step requires the "Search Index Data Contributor" role, which is now automatically assigned to the developer that runs `terraform -chdir=infra/terraform apply -var-file=environments/dev.tfvars`.
 
 Run the script after deploying and ingesting documents:
 
@@ -378,7 +383,7 @@ Manually enable document level access control on a search index and manually set
 
 Prior to running the script:
 
-- Run `azd up` or use `azd env set` to manually set the `AZURE_SEARCH_SERVICE` and `AZURE_SEARCH_INDEX` azd environment variables
+- Run `terraform -chdir=infra/terraform apply -var-file=environments/dev.tfvars` or edit `dev.tfvars` to manually set `search_service_name` and `search_index_name` as the equivalent Terraform variables
 - Activate the Python virtual environment for your shell session
 
 The script supports the following commands. All commands support `-v` for verbose logging.
@@ -457,8 +462,8 @@ print(token.token)
 
 The following environment variables are used to setup the optional login and document level access control:
 
-- `AZURE_USE_AUTHENTICATION`: Enables Entra ID login and document level access control. Set to true before running `azd up`.
-- `AZURE_ENFORCE_ACCESS_CONTROL`: Enforces Entra ID based login and document level access control on documents with access control assigned. Set to true before running `azd up`. If `AZURE_ENFORCE_ACCESS_CONTROL` is enabled and `AZURE_ENABLE_UNAUTHENTICATED_ACCESS` is not enabled, then authentication is required to use the app.
+- `AZURE_USE_AUTHENTICATION`: Enables Entra ID login and document level access control. Set to true before running `terraform -chdir=infra/terraform apply -var-file=environments/dev.tfvars`.
+- `AZURE_ENFORCE_ACCESS_CONTROL`: Enforces Entra ID based login and document level access control on documents with access control assigned. Set to true before running `terraform -chdir=infra/terraform apply -var-file=environments/dev.tfvars`. If `AZURE_ENFORCE_ACCESS_CONTROL` is enabled and `AZURE_ENABLE_UNAUTHENTICATED_ACCESS` is not enabled, then authentication is required to use the app.
 - `AZURE_ENABLE_GLOBAL_DOCUMENT_ACCESS`: Enables prepdocs upload code to support setting user ids and group ids to `["all"]` when uploading documents that have no access control assigned. This will enable the built-in document level access control to return these documents if `AZURE_ENFORCE_ACCESS_CONTROL` is enabled. If you are migrating from a previous version where this was not required, you'll have to perform a [one-time migration](#migrate-to-built-in-document-access-control) to enable global document access.
 - `AZURE_ENABLE_UNAUTHENTICATED_ACCESS`: Allows unauthenticated users to access the chat app. If `AZURE_ENFORCE_ACCESS_CONTROL` is enabled, unauthenticated users cannot search on documents.
 - `AZURE_DISABLE_APP_SERVICES_AUTHENTICATION`: Disables [use of built-in authentication for App Services](https://learn.microsoft.com/azure/app-service/overview-authentication-authorization). An authentication flow based on the MSAL SDKs is used instead. Useful when you want to provide programmatic access to the chat endpoints with authentication.

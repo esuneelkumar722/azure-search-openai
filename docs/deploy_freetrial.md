@@ -3,7 +3,7 @@
 If you have just created an Azure free trial account and are using the free trial credits,
 there are several modifications you need to make, due to restrictions on the free trial account.
 
-Follow these instructions *before* you run `azd up`.
+Follow these instructions *before* you run `terraform -chdir=infra/terraform apply -var-file=environments/dev.tfvars`.
 
 ## Accomodate for low OpenAI quotas
 
@@ -11,17 +11,17 @@ The free trial accounts currently get a max of 1K TPM (tokens-per-minute), where
 
 To reduce the TPM allocation, run these commands:
 
-```shell
-azd env set AZURE_OPENAI_CHATGPT_DEPLOYMENT_CAPACITY 1
-azd env set AZURE_OPENAI_EMB_DEPLOYMENT_CAPACITY 1
+```hcl
+chatgpt_deployment_capacity = 1
+embedding_deployment_capacity = 1
 ```
 
 Alternatively, if you have an OpenAI.com account, you can use that instead:
 
-```shell
-azd env set OPENAI_HOST openai
-azd env set OPENAI_ORGANIZATION {Your OpenAI organization}
-azd env set OPENAI_API_KEY {Your OpenAI API key}
+```hcl
+openai_host = "openai"
+openai_api_organization = "{Your OpenAI organization}"
+openai_api_key = "{Your OpenAI API key}"
 ```
 
 ## Accomodate for Azure Container Apps restrictions
@@ -38,6 +38,6 @@ You have two options:
     * Comment out `host: containerapp` and uncomment `host: appservice` in the [azure.yaml](../azure.yaml) file.
     * Set the deployment target to `appservice`:
 
-        ```shell
-        azd env set DEPLOYMENT_TARGET appservice
+        ```hcl
+        deployment_target = "appservice"
         ```

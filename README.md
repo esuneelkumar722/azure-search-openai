@@ -5,12 +5,11 @@ description: Chat with your domain data using Azure OpenAI and Azure AI Search.
 languages:
 - python
 - typescript
-- bicep
-- azdeveloper
+- terraform
 products:
 - azure-openai
 - azure-cognitive-search
-- azure-app-service
+- azure-container-apps
 - azure
 page_type: sample
 urlFragment: azure-search-openai-demo
@@ -101,8 +100,8 @@ However, you can try the [Azure pricing calculator](https://azure.com/e/e3490de2
 To reduce costs, you can switch to free SKUs for various services, but those SKUs have limitations.
 See this guide on [deploying with minimal costs](docs/deploy_lowcost.md) for more details.
 
-⚠️ To avoid unnecessary costs, remember to take down your app if it's no longer in use,
-either by deleting the resource group in the Portal or running `azd down`.
+⚠️ To avoid unnecessary costs, remember to take down your app if it's no longer in use
+(see [Clean up](#clean-up)).
 
 ## Getting Started
 
@@ -291,7 +290,7 @@ You can find extensive documentation in the [docs](docs/README.md) folder:
 - Deploying:
   - [Troubleshooting deployment](docs/deploy_troubleshooting.md)
     - [Debugging the app on App Service](docs/appservice.md)
-  - [Deploying with azd: deep dive and CI/CD](docs/azd.md)
+  - [Terraform deployment and CI/CD](docs/terraform_cicd.md)
   - [Deploying with existing Azure resources](docs/deploy_existing.md)
   - [Deploying from a free account](docs/deploy_lowcost.md)
   - [Enabling optional features](docs/deploy_features.md)

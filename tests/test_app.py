@@ -4,10 +4,10 @@ from typing import Any
 from unittest import mock
 
 import pytest
-import quart.testing.app
+from fastapi.responses import Response as FastAPIResponse
+from fastapi.testclient import TestClient
 from httpx import Request, Response
 from openai import BadRequestError
-from quart import Response as QuartResponse
 
 import app
 
@@ -61,14 +61,13 @@ def pop_citation_activity_details(result: dict[str, Any] | None):  # type: ignor
     return data_points.pop("citation_activity_details", None)
 
 
-@pytest.mark.asyncio
-async def test_missing_env_vars():
+def test_missing_env_vars():
     with mock.patch.dict(os.environ, clear=True):
-        quart_app = app.create_app()
+        fastapi_app = app.create_app()
 
-        with pytest.raises(quart.testing.app.LifespanError, match="Error during startup 'AZURE_STORAGE_ACCOUNT'"):
-            async with quart_app.test_app() as test_app:
-                test_app.test_client()
+        with pytest.raises(Exception, match="AZURE_STORAGE_ACCOUNT"):
+            with TestClient(fastapi_app):
+                pass
 
 
 @pytest.mark.asyncio
@@ -84,12 +83,13 @@ async def test_redirect(client):
     assert (await response.get_data()) == b""
 
 
+
 @pytest.mark.asyncio
 async def test_favicon(client):
     response = await client.get("/favicon.ico")
     assert response.status_code == 200
     assert response.content_type.startswith("image")
-    assert response.content_type.endswith("icon")
+    assert response.content_type.endswith("x-icon")
 
 
 @pytest.mark.asyncio
@@ -99,13 +99,14 @@ async def test_cors_notallowed(client) -> None:
 
 
 @pytest.mark.asyncio
-async def test_assets_route_delegates_to_send_from_directory(client, monkeypatch):
-    async def fake_send_from_directory(directory, requested_path):
-        assert "assets" in str(directory)
-        assert requested_path == "bundle.js"
-        return QuartResponse("console.log('hi')", mimetype="application/javascript")
+async def test_assets_route_serves_correct_file(client, monkeypatch):
+    class FakeFileResponse(FastAPIResponse):
+        def __init__(self, path, **kwargs):
+            assert "assets" in str(path)
+            assert "bundle.js" in str(path)
+            super().__init__(content=b"console.log('hi')", media_type="application/javascript")
 
-    monkeypatch.setattr(app, "send_from_directory", fake_send_from_directory)
+    monkeypatch.setattr(app, "FileResponse", FakeFileResponse)
 
     response = await client.get("/assets/bundle.js")
     assert response.status_code == 200
@@ -116,7 +117,7 @@ async def test_assets_route_delegates_to_send_from_directory(client, monkeypatch
 async def test_cors_allowed(client) -> None:
     response = await client.get("/", headers={"Origin": "https://frontend.com"})
     assert response.access_control_allow_origin == "https://frontend.com"
-    assert "Access-Control-Allow-Origin" in response.headers
+    assert "access-control-allow-origin" in response.headers
 
 
 @pytest.mark.asyncio

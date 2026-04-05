@@ -25,7 +25,7 @@ AzureChat deploys a private chat app with a ChatGPT-like UX on Azure, with built
 
 Key differences versus this repository:
 
-* **Technology stack**: AzureChat uses a full JavaScript/TypeScript stack with a Node.js backend; this repo uses Python (Quart) for backend services.
+* **Technology stack**: AzureChat uses a full JavaScript/TypeScript stack with a Node.js backend; this repo uses Python (FastAPI) for backend services.
 * **Use case emphasis**: AzureChat offers more features around user personalization, while this repo offers more features needed for enterprise scenarios like data ACLs and evaluation.
 
 Feature comparison:
@@ -46,9 +46,9 @@ Technology comparison:
 | Tech | azure-search-openai-demo | azurechat |
 | --- | --- | --- |
 | Frontend | React (TypeScript) | React (TypeScript) |
-| Backend | Python (Quart) | Node.js (TypeScript) |
+| Backend | Python (FastAPI) | Node.js (TypeScript) |
 | Database | Azure AI Search | Azure AI Search |
-| Deployment | Azure Developer CLI (azd) | Azure Developer CLI (azd) |
+| Deployment | Terraform + Azure CLI | Azure Developer CLI (azd) |
 
 ## sample-app-aoai-chatGPT
 
@@ -80,6 +80,6 @@ Technology comparison:
 | Tech | azure-search-openai-demo | sample-app-aoai-chatGPT |
 | --- | --- | --- |
 | Frontend | React | React |
-| Backend | Python (Quart) | Python (Quart) |
+| Backend | Python (FastAPI) | Python (FastAPI) |
 | Vector DB | Azure AI Search | Azure AI Search, CosmosDB Mongo vCore, ElasticSearch, Pinecone, AzureML |
-| Deployment | Azure Developer CLI (azd) | Azure Portal, az, azd |
+| Deployment | Terraform + Azure CLI | Azure Portal, az |

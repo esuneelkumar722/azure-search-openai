@@ -1,4 +1,4 @@
-# RAG chat: Using reasoning models
+﻿# RAG chat: Using reasoning models
 
 This repository includes an optional feature that uses reasoning models to generate responses based on retrieved content. These models spend more time processing and understanding the user's request.
 
@@ -26,65 +26,65 @@ This repository includes an optional feature that uses reasoning models to gener
 
    For gpt-5:
 
-   ```shell
-   azd env set AZURE_OPENAI_CHATGPT_MODEL gpt-5
-   azd env set AZURE_OPENAI_CHATGPT_DEPLOYMENT gpt-5
-   azd env set AZURE_OPENAI_CHATGPT_DEPLOYMENT_VERSION 2025-08-07
-   azd env set AZURE_OPENAI_CHATGPT_DEPLOYMENT_SKU GlobalStandard
+   ```hcl
+   chatgpt_model_name = "gpt-5"
+   chatgpt_deployment_name = "gpt-5"
+   chatgpt_deployment_version = "2025-08-07"
+   chatgpt_deployment_sku_name = "GlobalStandard"
    ```
 
    For gpt-5-mini:
 
-   ```shell
-   azd env set AZURE_OPENAI_CHATGPT_MODEL gpt-5-mini
-   azd env set AZURE_OPENAI_CHATGPT_DEPLOYMENT gpt-5-mini
-   azd env set AZURE_OPENAI_CHATGPT_DEPLOYMENT_VERSION 2025-08-07
-   azd env set AZURE_OPENAI_CHATGPT_DEPLOYMENT_SKU GlobalStandard
+   ```hcl
+   chatgpt_model_name = "gpt-5-mini"
+   chatgpt_deployment_name = "gpt-5-mini"
+   chatgpt_deployment_version = "2025-08-07"
+   chatgpt_deployment_sku_name = "GlobalStandard"
    ```
 
    For gpt-5-nano:
 
-   ```shell
-   azd env set AZURE_OPENAI_CHATGPT_MODEL gpt-5-nano
-   azd env set AZURE_OPENAI_CHATGPT_DEPLOYMENT gpt-5-nano
-   azd env set AZURE_OPENAI_CHATGPT_DEPLOYMENT_VERSION 2025-08-07
-   azd env set AZURE_OPENAI_CHATGPT_DEPLOYMENT_SKU GlobalStandard
+   ```hcl
+   chatgpt_model_name = "gpt-5-nano"
+   chatgpt_deployment_name = "gpt-5-nano"
+   chatgpt_deployment_version = "2025-08-07"
+   chatgpt_deployment_sku_name = "GlobalStandard"
    ```
 
    For o4-mini:
 
-   ```shell
-   azd env set AZURE_OPENAI_CHATGPT_MODEL o4-mini
-   azd env set AZURE_OPENAI_CHATGPT_DEPLOYMENT o4-mini
-   azd env set AZURE_OPENAI_CHATGPT_DEPLOYMENT_VERSION 2025-04-16
-   azd env set AZURE_OPENAI_CHATGPT_DEPLOYMENT_SKU GlobalStandard
+   ```hcl
+   chatgpt_model_name = "o4-mini"
+   chatgpt_deployment_name = "o4-mini"
+   chatgpt_deployment_version = "2025-04-16"
+   chatgpt_deployment_sku_name = "GlobalStandard"
    ```
 
    For o3:
 
-   ```shell
-   azd env set AZURE_OPENAI_CHATGPT_MODEL o3
-   azd env set AZURE_OPENAI_CHATGPT_DEPLOYMENT o3
-   azd env set AZURE_OPENAI_CHATGPT_DEPLOYMENT_VERSION 2025-04-16
-   azd env set AZURE_OPENAI_CHATGPT_DEPLOYMENT_SKU GlobalStandard
+   ```hcl
+   chatgpt_model_name = "o3"
+   chatgpt_deployment_name = "o3"
+   chatgpt_deployment_version = "2025-04-16"
+   chatgpt_deployment_sku_name = "GlobalStandard"
    ```
 
    For o3-mini: (No vision support)
 
-   ```shell
-   azd env set AZURE_OPENAI_CHATGPT_MODEL o4-mini
-   azd env set AZURE_OPENAI_CHATGPT_DEPLOYMENT o4-mini
-   azd env set AZURE_OPENAI_CHATGPT_DEPLOYMENT_VERSION 2025-04-16
-   azd env set AZURE_OPENAI_CHATGPT_DEPLOYMENT_SKU GlobalStandard
+   ```hcl
+   chatgpt_model_name = "o4-mini"
+   chatgpt_deployment_name = "o4-mini"
+   chatgpt_deployment_version = "2025-04-16"
+   chatgpt_deployment_sku_name = "GlobalStandard"
    ```
 
    For o1: (No streaming support)
 
-   ```shell
-   azd env set AZURE_OPENAI_CHATGPT_MODEL o1
-   azd env set AZURE_OPENAI_CHATGPT_DEPLOYMENT o1
-   azd env set AZURE_OPENAI_CHATGPT_DEPLOYMENT_VERSION 2024-12-17
-   azd env set AZURE_OPENAI_CHATGPT_DEPLOYMENT_SKU GlobalStandard
+   ```hcl
+   chatgpt_model_name = "o1"
+   chatgpt_deployment_name = "o1"
+   chatgpt_deployment_version = "2024-12-17"
+   chatgpt_deployment_sku_name = "GlobalStandard"
    ```
 
 2. **(Optional) Set default reasoning effort**
@@ -93,13 +93,13 @@ This repository includes an optional feature that uses reasoning models to gener
 
    Set the environment variable for reasoning effort:
 
-   ```shell
-   azd env set AZURE_OPENAI_REASONING_EFFORT minimal
+   ```hcl
+   reasoning_effort = "minimal"
    ```
 
 3. **Update the infrastructure and application:**
 
-   Execute `azd up` to provision the infrastructure changes (only the new model, if you ran `up` previously) and deploy the application code with the updated environment variables.
+   Execute `terraform -chdir=infra/terraform apply -var-file=environments/dev.tfvars` to provision the infrastructure changes (only the new model, if you ran `up` previously) and deploy the application code with the updated environment variables.
 
 4. **Try out the feature:**
 

@@ -5,7 +5,7 @@
 
 ## Does this introduce a breaking change?
 
-When developers merge from main and run the server, azd up, or azd deploy, will this produce an error?
+When developers merge from main and run `terraform -chdir=infra/terraform apply -var-file=environments/dev.tfvars`, will this produce an error?
 If you're not sure, try it out on an old environment.
 
 ```
