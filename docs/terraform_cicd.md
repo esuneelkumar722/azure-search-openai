@@ -2,12 +2,58 @@
 
 This guide covers advanced deployment topics. If you are new to the project, start with the main [README](../README.md#deploying).
 
+* [How is Terraform state stored?](#how-is-terraform-state-stored)
 * [How does the Terraform deployment work?](#how-does-the-terraform-deployment-work)
 * [Tearing down resources (cost clean-up)](#tearing-down-resources-cost-clean-up)
 * [Re-deploying from scratch after a destroy](#re-deploying-from-scratch-after-a-destroy)
 * [Configuring continuous deployment](#configuring-continuous-deployment)
   * [GitHub Actions](#github-actions)
   * [Azure Pipelines](#azure-pipelines)
+
+## How is Terraform state stored?
+
+Terraform must store a record of what it has deployed (the "state file") so it knows what to create, update, or destroy on subsequent runs. In this project the state file is stored **remotely in Azure Blob Storage**, not on your local machine. This means:
+
+- Multiple developers or CI/CD pipelines can share the same state safely
+- The state survives if you delete your local `.terraform/` folder
+- Azure provides built-in blob versioning so previous states can be recovered
+
+The state lives in a **dedicated resource group that is separate from the app resources**:
+
+| Resource | Name |
+|---|---|
+| Resource group | `rg-terraform-state` |
+| Storage account | created by `bootstrap-state.sh` (unique per user) |
+| Container | `tfstate` |
+| State file key | `azure-search-openai.tfstate` |
+
+This separation is intentional — `terraform destroy` deletes the app resources (`rg-dev-openai-rag`) but leaves the state storage untouched, so you can re-deploy cleanly without bootstrapping again.
+
+### Setting up state storage for the first time
+
+Run the bootstrap script **once** before the very first `terraform init`:
+
+```bash
+bash infra/terraform/scripts/bootstrap-state.sh
+```
+
+This creates `rg-terraform-state`, the storage account, and a blob container. It also puts a `CanNotDelete` lock on the resource group to prevent accidental removal. After it runs, update `infra/terraform/backend.tf` with the printed storage account name.
+
+### Fully cleaning up state storage (optional)
+
+The state storage account costs very little (a few cents per month for a small blob). You only need to delete it if you want to completely remove every trace from your subscription.
+
+> **Warning:** Removing the lock and deleting the state storage is irreversible. Only do this if you are done with the project entirely and do not plan to re-deploy.
+
+```powershell
+# 1 — Remove the CanNotDelete lock first
+az lock delete --name terraform-state-lock --resource-group rg-terraform-state
+
+# 2 — Delete the entire state resource group
+az group delete --name rg-terraform-state --yes
+```
+
+If you delete the state and later want to re-deploy, you must re-run `bootstrap-state.sh` and update `backend.tf` with the new storage account name before running `terraform init`.
 
 ## How does the Terraform deployment work?
 
