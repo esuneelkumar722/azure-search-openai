@@ -3,6 +3,8 @@
 This guide covers advanced deployment topics. If you are new to the project, start with the main [README](../README.md#deploying).
 
 * [How does the Terraform deployment work?](#how-does-the-terraform-deployment-work)
+* [Tearing down resources (cost clean-up)](#tearing-down-resources-cost-clean-up)
+* [Re-deploying from scratch after a destroy](#re-deploying-from-scratch-after-a-destroy)
 * [Configuring continuous deployment](#configuring-continuous-deployment)
   * [GitHub Actions](#github-actions)
   * [Azure Pipelines](#azure-pipelines)
@@ -34,6 +36,77 @@ $APP = terraform -chdir=infra/terraform output -raw backend_service_name
 az acr build --registry $ACR --image azure-search-openai:latest app/ --no-logs
 az containerapp update --name $APP --resource-group $RG --image "$ACR.azurecr.io/azure-search-openai:latest"
 ```
+
+## Tearing down resources (cost clean-up)
+
+To delete all Azure resources provisioned by Terraform and stop all billing, run:
+
+```powershell
+terraform -chdir=infra/terraform destroy -var-file=environments/dev.tfvars
+```
+
+This removes every resource in the deployment — Azure OpenAI, AI Search, Storage, Cosmos DB, Container Apps, Container Registry, and all role assignments.
+
+> **What is preserved locally:** Your `infra/terraform/environments/dev.tfvars` and your `.env` file are not deleted. All your source code stays intact. You can re-deploy at any time by following the steps below.
+
+> **Soft-delete warning:** Azure soft-deletes Cognitive Services (OpenAI, Document Intelligence, Vision) resources for 48 days after destroy. If you re-deploy with the same `environment_name` within that window you may hit a `Conflict (HTTP 409)` error. The Terraform templates include `restore = true` to handle this automatically. If you still hit the error, see [deploy_troubleshooting.md](deploy_troubleshooting.md) for manual purge steps.
+
+## Re-deploying from scratch after a destroy
+
+Follow these steps in order to fully restore the application:
+
+### Step 1 — Re-provision all Azure resources
+
+```powershell
+terraform -chdir=infra/terraform init        # only needed if .terraform folder was deleted
+terraform -chdir=infra/terraform apply -var-file=environments/dev.tfvars
+```
+
+This recreates everything: OpenAI, AI Search, Storage, Cosmos DB, Container Apps, Container Registry. It typically takes 10–20 minutes.
+
+### Step 2 — Regenerate the .env file
+
+After `apply` completes, regenerate the `.env` file from Terraform outputs so local dev and scripts pick up the new resource names:
+
+```powershell
+./scripts/load_python_env.ps1
+```
+
+### Step 3 — Re-index documents into AI Search
+
+The Storage and Search index are new and empty after a fresh deploy. Re-upload and index your documents:
+
+```powershell
+./scripts/prepdocs.ps1
+```
+
+### Step 4 — Rebuild and push the Docker image
+
+The Container Registry is new, so it has no image. Rebuild and push:
+
+```powershell
+$ACR = terraform -chdir=infra/terraform output -raw container_registry_name
+az acr build --registry $ACR --file app/backend/Dockerfile --image azure-search-openai:latest app/backend/
+```
+
+### Step 5 — Update the Container App with the new image
+
+```powershell
+$RG  = terraform -chdir=infra/terraform output -raw azure_resource_group
+$APP = terraform -chdir=infra/terraform output -raw backend_service_name
+
+az containerapp update --name $APP --resource-group $RG --image "$ACR.azurecr.io/azure-search-openai:latest"
+```
+
+### Step 6 — Verify
+
+Open the Container App URL (from `terraform output backend_uri`) in your browser and send a test chat message. Check the container logs to confirm uvicorn started cleanly:
+
+```powershell
+az containerapp logs show --name $APP --resource-group $RG --tail 20
+```
+
+Look for `Uvicorn running on http://0.0.0.0:8000` and `Application startup complete.`
 
 ## Configuring continuous deployment
 
