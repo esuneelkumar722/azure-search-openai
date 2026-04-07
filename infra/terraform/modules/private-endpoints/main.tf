@@ -1,6 +1,6 @@
 # =============================================================================
 # Private Endpoints and DNS Zones
-# Mirrors infra/private-endpoints.bicep
+
 # =============================================================================
 
 # Flatten the connections into individual endpoints

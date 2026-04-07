@@ -1,6 +1,6 @@
 # =============================================================================
 # VNet and Subnets for Private Endpoint Deployment
-# Mirrors infra/network-isolation.bicep
+
 # =============================================================================
 
 resource "azurerm_virtual_network" "this" {

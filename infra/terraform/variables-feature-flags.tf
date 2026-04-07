@@ -1,7 +1,7 @@
 # =============================================================================
 # Feature Flags
 # These control which optional Azure resources are deployed.
-# Default values match the Bicep defaults for minimal-cost deployment.
+
 # =============================================================================
 
 variable "use_vectors" {

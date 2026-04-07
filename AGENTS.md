@@ -55,7 +55,7 @@ If necessary, edit this file to ensure it accurately reflects the current state 
       * app/frontend/src/locales/ptBR/translation.json: Portuguese translations
       * app/frontend/src/locales/tr/translation.json: Turkish translations
     * app/frontend/src/pages: Contains the main pages of the application
-* infra: Contains the Bicep templates for provisioning Azure resources.
+* infra: Contains the Terraform templates for provisioning Azure resources.
 * tests: Contains the test code, including e2e tests, app integration tests, and unit tests.
 
 ## Adding new data
@@ -214,12 +214,6 @@ terraform -chdir=infra/terraform apply -var-file=environments/dev.tfvars
 ```
 
 That command will BOTH provision the Azure resources AND deploy the application code.
-
-If you only changed the Bicep templates and want to re-provision the Azure resources, run:
-
-```shell
-terraform -chdir=infra/terraform apply -var-file=environments/dev.tfvars
-```
 
 If you only changed the application code and want to re-deploy the code, run:
 

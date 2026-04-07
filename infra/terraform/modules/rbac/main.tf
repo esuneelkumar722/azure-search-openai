@@ -1,6 +1,6 @@
 # =============================================================================
 # RBAC Role Assignments
-# Consolidated from ~25 individual role.bicep calls in main.bicep
+
 # =============================================================================
 
 # Well-known role names (using names instead of IDs to avoid subscription prefix mismatch)

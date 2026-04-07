@@ -263,8 +263,7 @@ opentelemetry-instrumentation-django==0.60b0
     # via azure-monitor-opentelemetry
 opentelemetry-instrumentation-fastapi==0.60b0
     # via azure-monitor-opentelemetry
-opentelemetry-instrumentation-flask==0.60b0
-    # via azure-monitor-opentelemetry
+
 opentelemetry-instrumentation-httpx==0.60b0
     # via -r app/backend/requirements.in
 opentelemetry-instrumentation-openai==0.51.1

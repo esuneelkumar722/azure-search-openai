@@ -1,6 +1,6 @@
 # =============================================================================
 # Application Environment Variables
-# Mirrors the appEnvVariables map from main.bicep (lines 486-570)
+
 # These are passed to the Container App as environment variables.
 # =============================================================================
 

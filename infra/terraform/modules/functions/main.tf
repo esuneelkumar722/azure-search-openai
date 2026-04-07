@@ -1,5 +1,5 @@
 # Azure Functions for cloud document ingestion
-# Placeholder — full implementation needed based on infra/app/functions.bicep
+
 
 resource "azurerm_storage_account" "functions" {
   name                     = "stfunc${substr(md5(var.document_extractor_name), 0, 10)}"
