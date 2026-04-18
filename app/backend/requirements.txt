@@ -334,14 +334,14 @@ psutil==7.1.2
     # via azure-monitor-opentelemetry-exporter
 pycparser==2.22
     # via cffi
-pydantic==2.12.5
+pydantic==2.13.2
     # via
     #   fastapi
     #   fastapi-cloud-cli
     #   openai
     #   pydantic-extra-types
     #   pydantic-settings
-pydantic-core==2.41.5
+pydantic-core==2.46.2
     # via pydantic
 pydantic-extra-types==2.11.1
     # via fastapi
