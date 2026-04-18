@@ -801,7 +801,7 @@ def create_app() -> FastAPI:
         if len(allowed_origins) > 0:
             logger.info("CORS enabled for %s", allowed_origins)
             app.add_middleware(
-                CORSMiddleware,
+                CORSMiddleware,  # type: ignore[arg-type]
                 allow_origins=allowed_origins,
                 allow_methods=["GET", "POST"],
                 allow_headers=["*"],
