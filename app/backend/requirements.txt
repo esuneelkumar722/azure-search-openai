@@ -81,7 +81,7 @@ cffi==2.0.0
     # via cryptography
 charset-normalizer==3.3.2
     # via requests
-click==8.3.1
+click==8.3.3
     # via
     #   rich-toolkit
     #   typer
@@ -469,7 +469,7 @@ watchfiles==1.1.1
     # via uvicorn
 websockets==16.0
     # via uvicorn
-werkzeug==3.1.6
+werkzeug==3.1.8
     # via azure-functions
 wrapt==1.16.0
     # via
