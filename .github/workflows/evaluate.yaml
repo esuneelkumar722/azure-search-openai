@@ -106,7 +106,7 @@ jobs:
       USE_AI_PROJECT: ${{ vars.USE_AI_PROJECT }}
     steps:
       - name: Comment on pull request
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         with:
           script: |
             github.rest.issues.createComment({
@@ -135,17 +135,17 @@ jobs:
           node-version: 20
 
       - name: Install azd
-        uses: Azure/setup-azd@v2.2.1
+        uses: Azure/setup-azd@v2.3.0
 
       - name: Login to Azure with az CLI
-        uses: azure/login@v2
+        uses: azure/login@v3
         with:
           client-id: ${{ env.AZURE_CLIENT_ID }}
           tenant-id: ${{ env.AZURE_TENANT_ID }}
           subscription-id: ${{ env.AZURE_SUBSCRIPTION_ID }}
 
       - name: Set az account
-        uses: azure/CLI@v2
+        uses: azure/CLI@v3
         with:
           inlineScript: |
             az account set --subscription ${{env.AZURE_SUBSCRIPTION_ID}}
@@ -218,7 +218,7 @@ jobs:
           cat run-diff.md >> $GITHUB_STEP_SUMMARY
 
       - name: Comment on pull request
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         with:
           script: |
             const fs = require('fs');
