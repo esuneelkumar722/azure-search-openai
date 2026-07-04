@@ -334,18 +334,18 @@ psutil==7.1.2
     # via azure-monitor-opentelemetry-exporter
 pycparser==2.22
     # via cffi
-pydantic==2.12.5
+pydantic==2.13.4
     # via
     #   fastapi
     #   fastapi-cloud-cli
     #   openai
     #   pydantic-extra-types
     #   pydantic-settings
-pydantic-core==2.41.5
+pydantic-core==2.47.0
     # via pydantic
 pydantic-extra-types==2.11.1
     # via fastapi
-pydantic-settings==2.13.1
+pydantic-settings==2.14.2
     # via fastapi
 pygments==2.19.2
     # via rich
@@ -420,7 +420,7 @@ types-html5lib==1.1.11.20251014
     # via types-beautifulsoup4
 types-pillow==10.2.0.20240822
     # via -r app/backend/requirements.in
-typing-extensions==4.15.0
+typing-extensions==4.16.0
     # via
     #   -r app/backend/requirements.in
     #   aiosignal
